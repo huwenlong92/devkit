@@ -2,7 +2,39 @@
 
 mode="dev"
 
+show_help() {
+  cat <<'EOF'
+cx - Codex 多模式快捷命令
+
+Usage:
+  cx [mode] <需求>
+  cx -h | --help | help
+
+Modes:
+  默认        开发模式：按项目规则完成开发任务，保持最小改动，避免无关修改
+  -r, --read 只读分析模式：只分析问题，不修改文件，不执行破坏性命令
+  -f, --fix  修复模式：先定位问题，再给出最小修改方案，优先修 bug
+  -s, --sql  SQL 模式：重点检查 SQL、索引、Gorm 查询、N+1、事务、并发和性能
+  --review   代码审查模式：只审查当前代码问题，按严重程度输出，不修改文件
+
+Shortcut functions:
+  cxr <需求>  等同于 cx --read <需求>
+  cxf <需求>  等同于 cx --fix <需求>
+  cxs <需求>  等同于 cx --sql <需求>
+  cxv <需求>  等同于 cx --review <需求>
+
+Examples:
+  cx "实现登录页"
+  cx --read "分析这个接口为什么慢"
+  cxf "修复单元测试失败"
+EOF
+}
+
 case "$1" in
+  --help|-h|help)
+    show_help
+    exit 0
+    ;;
   --read|-r)
     mode="read"
     shift

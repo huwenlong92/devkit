@@ -1,0 +1,6 @@
+# Usage
+
+```bash
+export DEVKIT="$HOME/devkit"
+[ -f "$DEVKIT/shell/index.zsh" ] && source "$DEVKIT/shell/index.zsh"
+```
