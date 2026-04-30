@@ -1,0 +1,5 @@
+.DS_Store
+*.local.zsh
+.env
+secrets/
+private/

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+mode="dev"
+
+case "$1" in
+  --read|-r)
+    mode="read"
+    shift
+    ;;
+  --fix|-f)
+    mode="fix"
+    shift
+    ;;
+  --sql|-s)
+    mode="sql"
+    shift
+    ;;
+  --review)
+    mode="review"
+    shift
+    ;;
+esac
+
+rules=""
+
+for f in \
+  ".codex/default_prompt.txt" \
+  ".codex/agent.md" \
+  ".codex/db.md" \
+  ".codex/api.md" \
+  "AGENT.md" \
+  "AGENTS.md"
+do
+  if [ -f "$f" ]; then
+    rules="$rules
+
+--- $f ---
+$(cat "$f")"
+  fi
+done
+
+case "$mode" in
+  read)
+    mode_prompt="只读分析模式：只分析问题，不要修改任何文件，不要执行破坏性命令。"
+    ;;
+  fix)
+    mode_prompt="修复模式：先定位问题，再给出最小修改方案，优先修 bug，不做无关重构。"
+    ;;
+  sql)
+    mode_prompt="SQL 模式：重点检查 SQL、索引、Gorm 查询、N+1、事务、并发和性能。禁止 SELECT *。"
+    ;;
+  review)
+    mode_prompt="代码审查模式：只审查当前代码问题，按严重程度输出，不要修改文件。"
+    ;;
+  *)
+    mode_prompt="开发模式：按项目规则完成开发任务，保持最小改动，避免无关修改。"
+    ;;
+esac
+
+codex "### 模式
+$mode_prompt
+
+### 项目规则
+$rules
+
+### 用户需求
+$*"
