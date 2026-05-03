@@ -1,0 +1,75 @@
+# DevKit Tokyo Night Starship prompt
+add_newline = true
+command_timeout = 1000
+
+format = """
+$directory\
+$git_branch\
+$git_status\
+$nodejs\
+$golang\
+$rust\
+$python\
+$docker_context\
+$cmd_duration\
+$line_break\
+$character"""
+
+[character]
+success_symbol = "[❯](bold #9ece6a)"
+error_symbol = "[❯](bold #f7768e)"
+vimcmd_symbol = "[❮](bold #e0af68)"
+
+[directory]
+style = "bold #7aa2f7"
+truncation_length = 3
+truncate_to_repo = false
+
+[git_branch]
+format = "[$symbol$branch]($style) "
+style = "bold #bb9af7"
+symbol = "git:"
+
+[git_status]
+format = "([$all_status$ahead_behind]($style) )"
+style = "bold #e0af68"
+conflicted = "="
+ahead = "↑${count}"
+behind = "↓${count}"
+diverged = "↕↑${ahead_count}↓${behind_count}"
+untracked = "?${count}"
+stashed = "$"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "x${count}"
+
+[nodejs]
+format = "[$symbol$version ]($style)"
+style = "#9ece6a"
+symbol = "node "
+
+[golang]
+format = "[$symbol$version ]($style)"
+style = "#7dcfff"
+symbol = "go "
+
+[rust]
+format = "[$symbol$version ]($style)"
+style = "#f7768e"
+symbol = "rs "
+
+[python]
+format = "[${symbol}${version} ]($style)"
+style = "#e0af68"
+symbol = "py "
+
+[docker_context]
+format = "[$symbol$context ]($style)"
+style = "#7aa2f7"
+symbol = "docker "
+
+[cmd_duration]
+format = "[$duration]($style) "
+min_time = 2000
+style = "#e0af68"
