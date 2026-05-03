@@ -49,3 +49,27 @@ proxy npm off
 proxy git on
 proxy git off
 ```
+
+## Starship prompt
+
+DevKit 会在本机已经安装 `starship` 时加载 prompt。默认配置来自 `config/starship.default.toml`，如果存在 `config/starship.toml`，则会优先使用这个本机覆盖配置；该文件已被 `.gitignore` 忽略。
+
+```bash
+# macOS
+brew install starship
+
+# 查看当前配置
+starship explain
+```
+
+如果想基于默认配置调整，可以先复制一份本机配置：
+
+```bash
+cp "$DEVKIT/config/starship.default.toml" "$DEVKIT/config/starship.toml"
+```
+
+也可以在加载 DevKit 之前显式指定其它配置文件：
+
+```bash
+export DEVKIT_STARSHIP_CONFIG="$HOME/.config/starship.toml"
+```
