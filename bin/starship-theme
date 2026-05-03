@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEVKIT_ROOT="${DEVKIT:-$SCRIPT_ROOT}"
+if [ ! -d "$DEVKIT_ROOT/config/starship/themes" ] && [ -d "$SCRIPT_ROOT/config/starship/themes" ]; then
+  DEVKIT_ROOT="$SCRIPT_ROOT"
+fi
+THEME_DIR="${DEVKIT_STARSHIP_THEME_DIR:-$DEVKIT_ROOT/config/starship/themes}"
+TARGET_CONFIG="${DEVKIT_STARSHIP_CONFIG:-$DEVKIT_ROOT/config/starship.toml}"
+
+show_help() {
+  cat <<'EOF'
+starship-theme - DevKit Starship 主题管理
+
+Usage:
+  starship-theme list
+  starship-theme use <theme>
+  starship-theme current
+  starship-theme show <theme>
+  starship-theme path
+  starship-theme -h | --help | help
+
+Examples:
+  starship-theme list
+  starship-theme use default
+  starship-theme show compact
+EOF
+}
+
+theme_file() {
+  local name="$1"
+  case "$name" in
+    *[!A-Za-z0-9._-]*|"")
+      return 1
+      ;;
+  esac
+  printf '%s/%s.toml\n' "$THEME_DIR" "$name"
+}
+
+list_themes() {
+  if [ ! -d "$THEME_DIR" ]; then
+    echo "No theme directory: $THEME_DIR" >&2
+    exit 1
+  fi
+
+  local found=0
+  local current
+  current="$(detect_current || true)"
+
+  for file in "$THEME_DIR"/*.toml; do
+    [ -e "$file" ] || continue
+    found=1
+    name="$(basename "$file" .toml)"
+    if [ "$name" = "$current" ]; then
+      printf '* %s\n' "$name"
+    else
+      printf '  %s\n' "$name"
+    fi
+  done
+
+  if [ "$found" -eq 0 ]; then
+    echo "No themes found in $THEME_DIR" >&2
+    exit 1
+  fi
+}
+
+detect_current() {
+  [ -f "$TARGET_CONFIG" ] || return 1
+
+  for file in "$THEME_DIR"/*.toml; do
+    [ -e "$file" ] || continue
+    if cmp -s "$TARGET_CONFIG" "$file"; then
+      basename "$file" .toml
+      return 0
+    fi
+  done
+
+  echo "custom"
+}
+
+use_theme() {
+  local name="$1"
+  local file
+  if ! file="$(theme_file "$name")"; then
+    echo "Invalid theme name: $name" >&2
+    exit 1
+  fi
+
+  if [ ! -f "$file" ]; then
+    echo "Theme not found: $name" >&2
+    echo "Run 'starship-theme list' to see available themes." >&2
+    exit 1
+  fi
+
+  mkdir -p "$(dirname "$TARGET_CONFIG")"
+  cp "$file" "$TARGET_CONFIG"
+  echo "Switched Starship theme to '$name': $TARGET_CONFIG"
+}
+
+show_theme() {
+  local name="$1"
+  local file
+  if ! file="$(theme_file "$name")"; then
+    echo "Invalid theme name: $name" >&2
+    exit 1
+  fi
+
+  if [ ! -f "$file" ]; then
+    echo "Theme not found: $name" >&2
+    exit 1
+  fi
+
+  cat "$file"
+}
+
+case "${1:-}" in
+  --help|-h|help|"")
+    show_help
+    ;;
+  list|ls)
+    list_themes
+    ;;
+  use|switch)
+    if [ $# -lt 2 ]; then
+      echo "Missing theme name." >&2
+      echo "Usage: starship-theme use <theme>" >&2
+      exit 1
+    fi
+    use_theme "$2"
+    ;;
+  current)
+    detect_current || echo "default"
+    ;;
+  show)
+    if [ $# -lt 2 ]; then
+      echo "Missing theme name." >&2
+      echo "Usage: starship-theme show <theme>" >&2
+      exit 1
+    fi
+    show_theme "$2"
+    ;;
+  path)
+    printf 'themes: %s\nconfig: %s\n' "$THEME_DIR" "$TARGET_CONFIG"
+    ;;
+  *)
+    echo "Unknown command: $1" >&2
+    show_help >&2
+    exit 1
+    ;;
+esac

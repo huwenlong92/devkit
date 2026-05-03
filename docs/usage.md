@@ -50,25 +50,44 @@ proxy git on
 proxy git off
 ```
 
-## Starship prompt
+## Starship prompt themes
 
-DevKit 会在本机已经安装 `starship` 时加载 prompt。默认配置来自 `config/starship.default.toml`，如果存在 `config/starship.toml`，则会优先使用这个本机覆盖配置；该文件已被 `.gitignore` 忽略。
+DevKit 会在本机已经安装 `starship` 时加载 prompt。默认主题来自 `config/starship/themes/default.toml`；如果存在 `config/starship.toml`，则会优先使用这个本机当前主题，该文件已被 `.gitignore` 忽略。
 
 ```bash
 # macOS
 brew install starship
 
-# 查看当前配置
-starship explain
+# 查看可用主题
+starship-theme list
+
+# 切换主题，会生成/覆盖 config/starship.toml
+starship-theme use default
+starship-theme use compact
+
+# 查看当前主题
+starship-theme current
 ```
 
-如果想基于默认配置调整，可以先复制一份本机配置：
+主题库放在：
 
 ```bash
-cp "$DEVKIT/config/starship.default.toml" "$DEVKIT/config/starship.toml"
+config/starship/themes/
 ```
 
-也可以在加载 DevKit 之前显式指定其它配置文件：
+可以新增自己的主题文件，例如 `config/starship/themes/work.toml`，然后执行：
+
+```bash
+starship-theme use work
+```
+
+如果只想临时编辑本机当前主题，可以直接改：
+
+```bash
+$DEVKIT/config/starship.toml
+```
+
+也可以在加载 DevKit 之前显式指定其它配置文件，跳过主题库：
 
 ```bash
 export DEVKIT_STARSHIP_CONFIG="$HOME/.config/starship.toml"
