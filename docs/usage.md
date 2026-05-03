@@ -60,13 +60,16 @@ brew install starship
 
 # 查看可用主题
 starship-theme list
+starship list
 
 # 切换主题，会生成/覆盖 config/starship.toml
 starship-theme use default
 starship-theme use compact
+starship use compact
 
 # 查看当前主题
 starship-theme current
+starship current
 ```
 
 主题库放在：

@@ -22,4 +22,20 @@ if ! command -v starship >/dev/null 2>&1; then
 fi
 
 # 加载 Starship prompt。
-eval "$(starship init zsh)"
+eval "$(command starship init zsh)"
+
+# 主题快捷命令：允许使用 `starship use <theme>` 切换 DevKit 主题。
+starship() {
+  case "${1:-}" in
+    list|use|switch|current|show|path)
+      command starship-theme "$@"
+      ;;
+    theme|themes)
+      shift
+      command starship-theme "$@"
+      ;;
+    *)
+      command starship "$@"
+      ;;
+  esac
+}

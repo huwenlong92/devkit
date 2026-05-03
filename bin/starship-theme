@@ -28,6 +28,21 @@ Examples:
 EOF
 }
 
+validate_theme() {
+  local file="$1"
+
+  if grep -q '^404: Not Found$' "$file"; then
+    return 1
+  fi
+
+  if command -v starship >/dev/null 2>&1; then
+    local cache_dir="${XDG_CACHE_HOME:-${TMPDIR:-/tmp}/devkit-starship-cache}"
+    mkdir -p "$cache_dir"
+    XDG_CACHE_HOME="$cache_dir" STARSHIP_CONFIG="$file" starship print-config >/dev/null
+    return
+  fi
+}
+
 theme_file() {
   local name="$1"
   case "$name" in
@@ -52,10 +67,13 @@ list_themes() {
     [ -e "$file" ] || continue
     found=1
     name="$(basename "$file" .toml)"
-    if [ "$name" = "$current" ]; then
-      printf '* %s\n' "$name"
+    marker=" "
+    [ "$name" = "$current" ] && marker="*"
+
+    if validate_theme "$file" >/dev/null 2>&1; then
+      printf '%s %s\n' "$marker" "$name"
     else
-      printf '  %s\n' "$name"
+      printf '%s %s (invalid)\n' "$marker" "$name"
     fi
   done
 
@@ -90,6 +108,12 @@ use_theme() {
   if [ ! -f "$file" ]; then
     echo "Theme not found: $name" >&2
     echo "Run 'starship-theme list' to see available themes." >&2
+    exit 1
+  fi
+
+  if ! validate_theme "$file"; then
+    echo "Invalid Starship theme: $name" >&2
+    echo "Theme file: $file" >&2
     exit 1
   fi
 
