@@ -50,6 +50,41 @@ proxy git on
 proxy git off
 ```
 
+## eza file listing
+
+DevKit 会在本机已经安装 `eza` 时自动启用文件列表增强；未安装时会安静跳过，保留系统 `ls`。
+
+```bash
+# macOS
+brew install eza
+
+# 常用快捷命令
+ls
+ll
+la
+lt
+```
+
+默认快捷命令：
+
+```bash
+ls  # eza --group-directories-first --icons=auto
+ll  # long + git + long-iso time
+la  # ll + hidden files
+lt  # tree, default level 2
+```
+
+可以在加载 DevKit 之前覆盖默认选项：
+
+```bash
+export DEVKIT_EZA_BASE_OPTIONS="--group-directories-first --icons=never"
+export DEVKIT_EZA_LONG_OPTIONS="-lh --git --time-style=long-iso"
+export DEVKIT_EZA_TREE_LEVEL=3
+
+# 或者禁用本模块
+export DEVKIT_EZA_ENABLE=0
+```
+
 ## Starship prompt themes
 
 DevKit 会在本机已经安装 `starship` 时加载 prompt。默认主题来自 `config/starship/themes/default.toml`；如果存在 `config/starship.toml`，则会优先使用这个本机当前主题，该文件已被 `.gitignore` 忽略。
