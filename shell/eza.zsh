@@ -17,18 +17,21 @@ export DEVKIT_EZA_BASE_OPTIONS="${DEVKIT_EZA_BASE_OPTIONS:---group-directories-f
 export DEVKIT_EZA_LONG_OPTIONS="${DEVKIT_EZA_LONG_OPTIONS:--lh --git --time-style=long-iso}"
 export DEVKIT_EZA_TREE_LEVEL="${DEVKIT_EZA_TREE_LEVEL:-2}"
 
-ls() {
+# 避免 zsh 在已有 alias ls='...' 时解析函数定义报错。
+unalias ls ll la lt 2>/dev/null
+
+function ls {
   command eza ${(z)DEVKIT_EZA_BASE_OPTIONS} "$@"
 }
 
-ll() {
+function ll {
   command eza ${(z)DEVKIT_EZA_BASE_OPTIONS} ${(z)DEVKIT_EZA_LONG_OPTIONS} "$@"
 }
 
-la() {
+function la {
   command eza ${(z)DEVKIT_EZA_BASE_OPTIONS} ${(z)DEVKIT_EZA_LONG_OPTIONS} -a "$@"
 }
 
-lt() {
+function lt {
   command eza ${(z)DEVKIT_EZA_BASE_OPTIONS} --tree --level "$DEVKIT_EZA_TREE_LEVEL" "$@"
 }
