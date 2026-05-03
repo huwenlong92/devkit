@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEVKIT_ROOT="${DEVKIT:-$SCRIPT_ROOT}"
+
+show_help() {
+  cat <<'EOF'
+devkit - DevKit 工具箱管理命令
+
+Usage:
+  devkit refresh
+  devkit path
+  devkit -h | --help | help
+
+Commands:
+  refresh  在 DevKit 目录执行 git pull --ff-only
+  path     显示当前 DevKit 目录
+
+Environment:
+  DEVKIT  DevKit 安装目录，默认当前 devkit 命令所在目录
+
+Examples:
+  devkit refresh
+  devkit path
+EOF
+}
+
+ensure_devkit_root() {
+  local root="$1"
+
+  if [ ! -d "$root/.git" ] || [ ! -d "$root/bin" ] || [ ! -d "$root/shell" ]; then
+    echo "Not a DevKit git root: $root" >&2
+    exit 1
+  fi
+}
+
+refresh_devkit() {
+  ensure_devkit_root "$DEVKIT_ROOT"
+
+  git -C "$DEVKIT_ROOT" pull --ff-only
+
+  echo
+  echo "DevKit updated: $DEVKIT_ROOT"
+  echo "Reload current shell with:"
+  printf '  source %q\n' "$DEVKIT_ROOT/shell/index.zsh"
+}
+
+case "${1:-}" in
+  --help|-h|help|"")
+    show_help
+    ;;
+  refresh|update|sync)
+    refresh_devkit
+    ;;
+  path)
+    printf '%s\n' "$DEVKIT_ROOT"
+    ;;
+  *)
+    echo "Unknown command: $1" >&2
+    show_help >&2
+    exit 1
+    ;;
+esac
