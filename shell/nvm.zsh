@@ -2,6 +2,12 @@
 # DevKit NVM 模块
 # ==============================================================================
 
+# 允许在加载 DevKit 前禁用本模块：
+  export DEVKIT_NVM_ENABLE=0
+if [ "${DEVKIT_NVM_ENABLE:-1}" = "0" ]; then
+  return 0 2>/dev/null || exit 0
+fi
+
 # NVM 配置目录
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 

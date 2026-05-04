@@ -53,9 +53,11 @@ proxy auto
 # 临时使用代理执行命令
 p curl -I https://www.google.com
 
-# npm / git 代理开关
+# npm / pnpm / git 代理开关
 proxy npm on
 proxy npm off
+proxy pnpm on
+proxy pnpm off
 proxy git on
 proxy git off
 ```
@@ -93,6 +95,65 @@ export DEVKIT_EZA_TREE_LEVEL=3
 
 # 或者禁用本模块
 export DEVKIT_EZA_ENABLE=0
+```
+
+## fnm Node.js versions
+
+DevKit 会在本机已经安装 `fnm` 时自动初始化 Node.js 版本管理；未安装时会安静跳过。
+
+```bash
+# macOS
+brew install fnm
+
+# 安装并使用 Node.js
+fnm install --lts
+fnm use --lts
+```
+
+默认会启用 `fnm env --use-on-cd --shell zsh`，进入包含 `.node-version` 或 `.nvmrc` 的目录时自动切换 Node.js 版本。
+
+可以在加载 DevKit 之前调整默认行为：
+
+```bash
+# 禁用目录切换自动读取版本文件
+export DEVKIT_FNM_USE_ON_CD=0
+
+# 或者禁用本模块
+export DEVKIT_FNM_ENABLE=0
+```
+
+如果已经从 `nvm` 迁移到 `fnm`，建议在加载 DevKit 之前禁用 nvm 模块，避免两个 Node.js 版本管理器同时改写 PATH：
+
+```bash
+export DEVKIT_NVM_ENABLE=0
+```
+
+## pnpm package manager
+
+DevKit 会自动把 `PNPM_HOME` 加入 `PATH`，方便使用 `pnpm setup` 或 Corepack 安装的 pnpm；未安装 `pnpm` 时会安静跳过补全加载。
+
+```bash
+# 推荐配合 Corepack 安装
+corepack enable
+corepack prepare pnpm@latest --activate
+
+# 查看版本
+pnpm --version
+```
+
+默认的 `PNPM_HOME` 是：
+
+```bash
+$HOME/Library/pnpm
+```
+
+可以在加载 DevKit 之前覆盖或禁用：
+
+```bash
+export PNPM_HOME="$HOME/.local/share/pnpm"
+
+# 或者禁用本模块
+export DEVKIT_PNPM_ENABLE=0
 ```
 
 ## Starship prompt themes

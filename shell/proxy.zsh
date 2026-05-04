@@ -81,6 +81,18 @@ npm_proxy_off() {
   echo "📦 npm proxy OFF"
 }
 
+pnpm_proxy_on() {
+  pnpm config set proxy "$_devkit_http_proxy"
+  pnpm config set https-proxy "$_devkit_http_proxy"
+  echo "📦 pnpm proxy ON"
+}
+
+pnpm_proxy_off() {
+  pnpm config delete proxy
+  pnpm config delete https-proxy
+  echo "📦 pnpm proxy OFF"
+}
+
 # ------------------------------------------------------------------------------
 # git
 # ------------------------------------------------------------------------------
@@ -159,6 +171,7 @@ proxy() {
 
 工具：
   proxy npm on|off
+  proxy pnpm on|off
   proxy git on|off
 
 节点（预留）：
@@ -181,6 +194,9 @@ EOF
 
     npm)
       [[ "$2" == "on" ]] && npm_proxy_on || npm_proxy_off
+      ;;
+    pnpm)
+      [[ "$2" == "on" ]] && pnpm_proxy_on || pnpm_proxy_off
       ;;
     git)
       [[ "$2" == "on" ]] && git_proxy_on || git_proxy_off
