@@ -156,6 +156,61 @@ export PNPM_HOME="$HOME/.local/share/pnpm"
 export DEVKIT_PNPM_ENABLE=0
 ```
 
+## Ghostty terminal
+
+DevKit 会在 Ghostty 中自动加载 zsh shell integration，补上 `exec zsh`、手动进入新 zsh 等场景下 Ghostty 自动注入丢失的问题。未在 Ghostty 中运行时会安静跳过。
+
+```bash
+# 查看 Ghostty 环境、配置路径和 zsh integration 状态
+gty status
+
+# 显示当前配置文件路径
+gty path
+
+# 创建并用 $EDITOR 打开配置文件
+gty edit
+```
+
+默认配置路径使用 Ghostty 新版推荐的 XDG 位置：
+
+```bash
+$HOME/.config/ghostty/config.ghostty
+```
+
+如果已存在旧版配置文件 `$HOME/.config/ghostty/config`，且还没有 `config.ghostty`，`gty path` 和 `gty edit` 会继续使用旧文件，避免迁移时误开空配置。
+
+常用 Ghostty CLI 也可以通过 `gty` 透传：
+
+```bash
+gty show-config
+gty show-config --default --docs
+gty list-fonts
+gty list-themes
+gty ssh-cache --help
+```
+
+Ghostty 的 zsh shell integration 路径来自 Ghostty 启动时设置的 `GHOSTTY_RESOURCES_DIR`：
+
+```bash
+$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration
+```
+
+可以在加载 DevKit 之前覆盖或禁用：
+
+```bash
+export DEVKIT_GHOSTTY_CONFIG_DIR="$HOME/.config/ghostty"
+export DEVKIT_GHOSTTY_CONFIG="$HOME/.config/ghostty/config.ghostty"
+
+# 或者禁用本模块
+export DEVKIT_GHOSTTY_ENABLE=0
+```
+
+如果需要启用 Ghostty 的 SSH / sudo shell integration 特性，请在 Ghostty 配置文件中设置，例如：
+
+```bash
+shell-integration-features = sudo,ssh-env,ssh-terminfo
+```
+
 ## Starship prompt themes
 
 DevKit 会在本机已经安装 `starship` 时加载 prompt。默认主题来自 `config/starship/themes/default.toml`；如果存在 `config/starship.toml`，则会优先使用这个本机当前主题，该文件已被 `.gitignore` 忽略。

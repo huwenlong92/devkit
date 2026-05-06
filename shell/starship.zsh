@@ -17,7 +17,10 @@ if [ -z "$STARSHIP_CONFIG" ]; then
 fi
 
 # 未安装 starship 时安静跳过。
-if ! command -v starship >/dev/null 2>&1; then
+# zsh 函数也会被 `command -v` 识别；重新 source 时先清理旧 wrapper，
+# 再只检查 PATH 中真实存在的 starship 可执行文件。
+unfunction starship 2>/dev/null
+if ! whence -p starship >/dev/null 2>&1; then
   return 0 2>/dev/null || exit 0
 fi
 
