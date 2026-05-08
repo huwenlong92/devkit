@@ -128,6 +128,82 @@ export DEVKIT_FNM_ENABLE=0
 export DEVKIT_NVM_ENABLE=0
 ```
 
+## gvm Go versions
+
+DevKit 会在本机已经安装 `gvm` 时自动初始化 Go 版本管理；未安装时会安静跳过，并由 `go.zsh` 保留基础 Go 环境兜底。
+
+安装 gvm：
+
+```bash
+# macOS 依赖
+xcode-select --install
+brew install mercurial bison
+
+# zsh 用户可以直接用 zsh 执行官方 installer
+zsh < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+
+# 重新打开终端，或手动加载
+source "$HOME/.gvm/scripts/gvm"
+```
+
+如果只想使用官方 README 中的默认安装命令，也可以用：
+
+```bash
+bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+```
+
+```bash
+# 安装并使用 Go 版本
+gvm install go1.22.5 -B
+gvm use go1.22.5 --default
+
+# 查看当前 Go 环境
+gvm list
+go version
+```
+
+加载 gvm 后，Go 版本、`GOROOT`、`GOPATH` 和 `PATH` 由 gvm/pkgset 接管；DevKit 只统一补上 Go Module 默认配置：
+
+```bash
+export GO111MODULE="${GO111MODULE:-on}"
+export GOPROXY="${GOPROXY:-https://goproxy.cn,direct}"
+```
+
+Homebrew 的 bison 是 keg-only 包，不会默认覆盖系统自带版本；`gvm.zsh` 会自动把 `/opt/homebrew/opt/bison/bin` 或 `/usr/local/opt/bison/bin` 放到 `PATH` 前面，确保 gvm 使用 bison 3+。如果安装在其它位置，可以手动指定：
+
+```bash
+export DEVKIT_GVM_BISON_HOME="/opt/homebrew/opt/bison"
+```
+
+可以在加载 DevKit 之前覆盖默认路径、禁用模块，或指定进入 shell 时自动使用的版本：
+
+```bash
+export DEVKIT_GVM_ROOT="$HOME/.gvm"
+export DEVKIT_GVM_DEFAULT_VERSION=go1.22.5
+export DEVKIT_GVM_DEFAULT_PKGSET=global
+
+# 或者禁用 gvm 模块，继续使用 go.zsh 的基础 GOPATH/GOBIN 配置
+export DEVKIT_GVM_ENABLE=0
+```
+
+常用示例：
+
+```bash
+# 查看所有可安装版本
+gvm listall
+
+# 新建并使用一个项目 pkgset
+gvm pkgset create my-project
+gvm pkgset use my-project
+
+# 直接切换到某个版本和 pkgset
+gvm use go1.22.5@my-project
+
+# 给当前项目创建本地 pkgset
+gvm pkgset create --local
+gvm pkgset use --local
+```
+
 ## pnpm package manager
 
 DevKit 会自动把 `PNPM_HOME` 加入 `PATH`，方便使用 `pnpm setup` 或 Corepack 安装的 pnpm；未安装 `pnpm` 时会安静跳过补全加载。

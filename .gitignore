@@ -1,6 +1,7 @@
 .DS_Store
 *.local.zsh
 .env
+.claude/
 secrets/
 private/
 config/starship.toml
