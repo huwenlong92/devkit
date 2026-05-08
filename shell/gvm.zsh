@@ -11,8 +11,26 @@ fi
 # GVM 默认安装目录；也可以通过 DEVKIT_GVM_ROOT 或 GVM_ROOT 覆盖。
 export GVM_ROOT="${DEVKIT_GVM_ROOT:-${GVM_ROOT:-$HOME/.gvm}}"
 
+_devkit_gvm_path_contains() {
+  case ":$PATH:" in
+    *":$1:"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+_devkit_gvm_append_path() {
+  [ -d "$1" ] || return 0
+  _devkit_gvm_path_contains "$1" && return 0
+  export PATH="${PATH:+$PATH:}$1"
+}
+
+_devkit_gvm_prepend_path() {
+  [ -d "$1" ] || return 0
+  _devkit_gvm_path_contains "$1" && return 0
+  export PATH="$1${PATH:+:$PATH}"
+}
+
 _devkit_gvm_ensure_base_path() {
-  typeset -U path PATH
   for _devkit_gvm_base_path in \
     "/opt/homebrew/bin" \
     "/opt/homebrew/sbin" \
@@ -22,11 +40,8 @@ _devkit_gvm_ensure_base_path() {
     "/usr/sbin" \
     "/sbin"
   do
-    if [ -d "$_devkit_gvm_base_path" ]; then
-      path=($path "$_devkit_gvm_base_path")
-    fi
+    _devkit_gvm_append_path "$_devkit_gvm_base_path"
   done
-  export PATH
 }
 
 _devkit_gvm_ensure_base_path
@@ -46,9 +61,7 @@ if [ -z "$_devkit_gvm_bison_home" ]; then
 fi
 
 if [ -n "$_devkit_gvm_bison_home" ] && [ -d "$_devkit_gvm_bison_home/bin" ]; then
-  typeset -U path PATH
-  path=("$_devkit_gvm_bison_home/bin" $path)
-  export PATH
+  _devkit_gvm_prepend_path "$_devkit_gvm_bison_home/bin"
   rehash 2>/dev/null
 fi
 
@@ -58,7 +71,7 @@ _devkit_gvm_script="${DEVKIT_GVM_SCRIPT:-$GVM_ROOT/scripts/gvm}"
 # 未安装 gvm 时安静跳过，Go 的基础配置由 go.zsh 兜底。
 if [ ! -s "$_devkit_gvm_script" ]; then
   unset _devkit_gvm_script _devkit_gvm_bison_home _devkit_gvm_bison_candidate _devkit_gvm_base_path
-  unfunction _devkit_gvm_ensure_base_path 2>/dev/null
+  unfunction _devkit_gvm_path_contains _devkit_gvm_append_path _devkit_gvm_prepend_path _devkit_gvm_ensure_base_path 2>/dev/null
   return 0 2>/dev/null || exit 0
 fi
 
@@ -83,4 +96,4 @@ if [ -n "$DEVKIT_GVM_DEFAULT_VERSION" ] && command -v gvm >/dev/null 2>&1; then
 fi
 
 unset _devkit_gvm_script _devkit_gvm_bison_home _devkit_gvm_bison_candidate _devkit_gvm_base_path
-unfunction _devkit_gvm_ensure_base_path 2>/dev/null
+unfunction _devkit_gvm_path_contains _devkit_gvm_append_path _devkit_gvm_prepend_path _devkit_gvm_ensure_base_path 2>/dev/null
