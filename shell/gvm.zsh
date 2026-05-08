@@ -11,6 +11,26 @@ fi
 # GVM 默认安装目录；也可以通过 DEVKIT_GVM_ROOT 或 GVM_ROOT 覆盖。
 export GVM_ROOT="${DEVKIT_GVM_ROOT:-${GVM_ROOT:-$HOME/.gvm}}"
 
+_devkit_gvm_ensure_base_path() {
+  typeset -U path PATH
+  for _devkit_gvm_base_path in \
+    "/opt/homebrew/bin" \
+    "/opt/homebrew/sbin" \
+    "/usr/local/bin" \
+    "/usr/bin" \
+    "/bin" \
+    "/usr/sbin" \
+    "/sbin"
+  do
+    if [ -d "$_devkit_gvm_base_path" ]; then
+      path=($path "$_devkit_gvm_base_path")
+    fi
+  done
+  export PATH
+}
+
+_devkit_gvm_ensure_base_path
+
 # gvm 编译 Go 1.5+ 时需要 bison 3+；Homebrew 的 keg-only bison 不会默认进 PATH。
 _devkit_gvm_bison_home="${DEVKIT_GVM_BISON_HOME:-}"
 if [ -z "$_devkit_gvm_bison_home" ]; then
@@ -37,12 +57,14 @@ _devkit_gvm_script="${DEVKIT_GVM_SCRIPT:-$GVM_ROOT/scripts/gvm}"
 
 # 未安装 gvm 时安静跳过，Go 的基础配置由 go.zsh 兜底。
 if [ ! -s "$_devkit_gvm_script" ]; then
-  unset _devkit_gvm_script _devkit_gvm_bison_home _devkit_gvm_bison_candidate
+  unset _devkit_gvm_script _devkit_gvm_bison_home _devkit_gvm_bison_candidate _devkit_gvm_base_path
+  unfunction _devkit_gvm_ensure_base_path 2>/dev/null
   return 0 2>/dev/null || exit 0
 fi
 
 # 加载 gvm，让 Go 版本、GOROOT、GOPATH 和 PATH 由 gvm/pkgset 统一接管。
 . "$_devkit_gvm_script"
+_devkit_gvm_ensure_base_path
 
 # Go Module 配置不绑定具体 Go 版本，统一放在 gvm 初始化之后设置。
 export GO111MODULE="${GO111MODULE:-on}"
@@ -60,4 +82,5 @@ if [ -n "$DEVKIT_GVM_DEFAULT_VERSION" ] && command -v gvm >/dev/null 2>&1; then
   fi
 fi
 
-unset _devkit_gvm_script _devkit_gvm_bison_home _devkit_gvm_bison_candidate
+unset _devkit_gvm_script _devkit_gvm_bison_home _devkit_gvm_bison_candidate _devkit_gvm_base_path
+unfunction _devkit_gvm_ensure_base_path 2>/dev/null
