@@ -29,6 +29,7 @@ if [ -n "$_devkit_gvm_bison_home" ] && [ -d "$_devkit_gvm_bison_home/bin" ]; the
   typeset -U path PATH
   path=("$_devkit_gvm_bison_home/bin" $path)
   export PATH
+  rehash 2>/dev/null
 fi
 
 # 自动查找 gvm 初始化脚本，也可以通过 DEVKIT_GVM_SCRIPT 手动指定。

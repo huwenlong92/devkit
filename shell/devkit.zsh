@@ -9,6 +9,7 @@ devkit() {
     refresh|update|sync)
       command devkit "$@" || return
       source "$DEVKIT/shell/index.zsh"
+      rehash 2>/dev/null
       echo "Reloaded DevKit shell config."
       ;;
     *)

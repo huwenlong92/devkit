@@ -21,7 +21,7 @@ gvm 的快速安装与使用示例：
 
 ```bash
 brew install mercurial bison
-zsh < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
 
 gvm install go1.22.5 -B
 gvm use go1.22.5 --default

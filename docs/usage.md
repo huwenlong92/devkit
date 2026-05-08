@@ -62,6 +62,18 @@ proxy git on
 proxy git off
 ```
 
+默认会通过 `no_proxy/NO_PROXY` 让本机和常见内网地址不走代理：
+
+```bash
+localhost,127.0.0.1,::1,0.0.0.0,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16
+```
+
+可以在加载 DevKit 前覆盖：
+
+```bash
+export DEVKIT_NO_PROXY="localhost,127.0.0.1,::1,192.168.1.0/24"
+```
+
 ## eza file listing
 
 DevKit 会在本机已经安装 `eza` 时自动启用文件列表增强；未安装时会安静跳过，保留系统 `ls`。
@@ -132,24 +144,23 @@ export DEVKIT_NVM_ENABLE=0
 
 DevKit 会在本机已经安装 `gvm` 时自动初始化 Go 版本管理；未安装时会安静跳过，并由 `go.zsh` 保留基础 Go 环境兜底。
 
-安装 gvm：
+安装 gvm 前先安装依赖：
 
 ```bash
-# macOS 依赖
 xcode-select --install
 brew install mercurial bison
-
-# zsh 用户可以直接用 zsh 执行官方 installer
-zsh < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
-
-# 重新打开终端，或手动加载
-source "$HOME/.gvm/scripts/gvm"
 ```
 
-如果只想使用官方 README 中的默认安装命令，也可以用：
+然后执行官方 installer：
 
 ```bash
 bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+```
+
+安装完成后重新打开终端，或手动加载：
+
+```bash
+source "$HOME/.gvm/scripts/gvm"
 ```
 
 ```bash
