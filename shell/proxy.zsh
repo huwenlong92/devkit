@@ -8,14 +8,37 @@
 export DEVKIT_PROXY_HOST="${DEVKIT_PROXY_HOST:-127.0.0.1}"
 export DEVKIT_HTTP_PROXY_PORT="${DEVKIT_HTTP_PROXY_PORT:-6666}"
 export DEVKIT_SOCKS_PROXY_PORT="${DEVKIT_SOCKS_PROXY_PORT:-7890}"
-#export DEVKIT_NO_PROXY="${DEVKIT_NO_PROXY:-localhost,127.0.0.1,::1,0.0.0.0,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16}"
-export DEVKIT_NO_PROXY="${DEVKIT_NO_PROXY:-localhost,127.0.0.1,::1,0.0.0.0,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16,100.64.0.0/10}"
+typeset -ga DEVKIT_NO_PROXY_ITEMS
+
+if [[ -n "${DEVKIT_NO_PROXY:-}" ]]; then
+  DEVKIT_NO_PROXY_ITEMS=("${(@s:,:)DEVKIT_NO_PROXY}")
+else
+  DEVKIT_NO_PROXY_ITEMS=(
+    localhost
+    127.0.0.1
+    ::1
+    0.0.0.0
+    "*.local"
+    10.0.0.0/8
+    172.16.0.0/12
+    192.168.0.0/16
+    169.254.0.0/16
+    100.64.0.0/10
+  )
+fi
+
+_devkit_proxy_refresh_no_proxy() {
+  export DEVKIT_NO_PROXY="${(j:,:)DEVKIT_NO_PROXY_ITEMS}"
+}
+
+_devkit_proxy_refresh_no_proxy
 
 # 代理地址
 _devkit_http_proxy="http://${DEVKIT_PROXY_HOST}:${DEVKIT_HTTP_PROXY_PORT}"
 _devkit_socks_proxy="socks5://${DEVKIT_PROXY_HOST}:${DEVKIT_SOCKS_PROXY_PORT}"
 
 _devkit_proxy_apply_no_proxy() {
+  _devkit_proxy_refresh_no_proxy
   export no_proxy="$DEVKIT_NO_PROXY"
   export NO_PROXY="$DEVKIT_NO_PROXY"
 }
@@ -44,10 +67,41 @@ proxy_off() {
 }
 
 proxy_status() {
-  echo "http_proxy=${http_proxy:-<empty>}"
-  echo "https_proxy=${https_proxy:-<empty>}"
-  echo "all_proxy=${all_proxy:-<empty>}"
-  echo "no_proxy=${no_proxy:-<empty>}"
+  _devkit_proxy_refresh_no_proxy
+  local -a active_no_proxy_items
+
+  if [[ -n "${no_proxy:-}" ]]; then
+    active_no_proxy_items=("${(@s:,:)no_proxy}")
+  else
+    active_no_proxy_items=()
+  fi
+
+  echo "DevKit Proxy"
+  printf "  %-12s %s\n" "host" "$DEVKIT_PROXY_HOST"
+  printf "  %-12s %s\n" "http port" "$DEVKIT_HTTP_PROXY_PORT"
+  printf "  %-12s %s\n" "socks port" "$DEVKIT_SOCKS_PROXY_PORT"
+
+  echo
+  echo "Environment"
+  printf "  %-12s %s\n" "http_proxy" "${http_proxy:-<empty>}"
+  printf "  %-12s %s\n" "https_proxy" "${https_proxy:-<empty>}"
+  printf "  %-12s %s\n" "all_proxy" "${all_proxy:-<empty>}"
+  if (( ${#active_no_proxy_items[@]} )); then
+    printf "  %-12s %s items\n" "no_proxy" "${#active_no_proxy_items[@]}"
+  else
+    printf "  %-12s %s\n" "no_proxy" "<empty>"
+  fi
+
+  echo
+  echo "No proxy items"
+  if (( ${#DEVKIT_NO_PROXY_ITEMS[@]} )); then
+    local item
+    for item in "${DEVKIT_NO_PROXY_ITEMS[@]}"; do
+      printf "  - %s\n" "$item"
+    done
+  else
+    echo "  <empty>"
+  fi
 }
 
 # ------------------------------------------------------------------------------
