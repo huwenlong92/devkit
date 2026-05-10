@@ -69,6 +69,26 @@ proxy_off() {
 proxy_status() {
   _devkit_proxy_refresh_no_proxy
   local -a active_no_proxy_items
+  local bold dim cyan green yellow red reset
+  local http_proxy_display https_proxy_display all_proxy_display
+
+  if [[ -t 1 ]]; then
+    bold=$'\033[1m'
+    dim=$'\033[2m'
+    cyan=$'\033[36m'
+    green=$'\033[32m'
+    yellow=$'\033[33m'
+    red=$'\033[31m'
+    reset=$'\033[0m'
+  else
+    bold=""
+    dim=""
+    cyan=""
+    green=""
+    yellow=""
+    red=""
+    reset=""
+  fi
 
   if [[ -n "${no_proxy:-}" ]]; then
     active_no_proxy_items=("${(@s:,:)no_proxy}")
@@ -76,31 +96,39 @@ proxy_status() {
     active_no_proxy_items=()
   fi
 
-  echo "DevKit Proxy"
-  printf "  %-12s %s\n" "host" "$DEVKIT_PROXY_HOST"
-  printf "  %-12s %s\n" "http port" "$DEVKIT_HTTP_PROXY_PORT"
-  printf "  %-12s %s\n" "socks port" "$DEVKIT_SOCKS_PROXY_PORT"
+  http_proxy_display="${red}<empty>${reset}"
+  https_proxy_display="${red}<empty>${reset}"
+  all_proxy_display="${red}<empty>${reset}"
+
+  [[ -n "${http_proxy:-}" ]] && http_proxy_display="${green}${http_proxy}${reset}"
+  [[ -n "${https_proxy:-}" ]] && https_proxy_display="${green}${https_proxy}${reset}"
+  [[ -n "${all_proxy:-}" ]] && all_proxy_display="${green}${all_proxy}${reset}"
+
+  echo "${bold}${cyan}DevKit Proxy${reset}"
+  printf "  ${dim}%-12s${reset} %s\n" "host" "$DEVKIT_PROXY_HOST"
+  printf "  ${dim}%-12s${reset} %s\n" "http port" "$DEVKIT_HTTP_PROXY_PORT"
+  printf "  ${dim}%-12s${reset} %s\n" "socks port" "$DEVKIT_SOCKS_PROXY_PORT"
 
   echo
-  echo "Environment"
-  printf "  %-12s %s\n" "http_proxy" "${http_proxy:-<empty>}"
-  printf "  %-12s %s\n" "https_proxy" "${https_proxy:-<empty>}"
-  printf "  %-12s %s\n" "all_proxy" "${all_proxy:-<empty>}"
+  echo "${bold}${cyan}Environment${reset}"
+  printf "  ${dim}%-12s${reset} %s\n" "http_proxy" "$http_proxy_display"
+  printf "  ${dim}%-12s${reset} %s\n" "https_proxy" "$https_proxy_display"
+  printf "  ${dim}%-12s${reset} %s\n" "all_proxy" "$all_proxy_display"
   if (( ${#active_no_proxy_items[@]} )); then
-    printf "  %-12s %s items\n" "no_proxy" "${#active_no_proxy_items[@]}"
+    printf "  ${dim}%-12s${reset} ${yellow}%s items${reset}\n" "no_proxy" "${#active_no_proxy_items[@]}"
   else
-    printf "  %-12s %s\n" "no_proxy" "<empty>"
+    printf "  ${dim}%-12s${reset} ${red}%s${reset}\n" "no_proxy" "<empty>"
   fi
 
   echo
-  echo "No proxy items"
+  echo "${bold}${cyan}No proxy items${reset}"
   if (( ${#DEVKIT_NO_PROXY_ITEMS[@]} )); then
     local item
     for item in "${DEVKIT_NO_PROXY_ITEMS[@]}"; do
-      printf "  - %s\n" "$item"
+      printf "  ${yellow}-${reset} %s\n" "$item"
     done
   else
-    echo "  <empty>"
+    echo "  ${red}<empty>${reset}"
   fi
 }
 
