@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 mode="dev"
+mode_set=0
 
 show_help() {
   cat <<'EOF'
@@ -37,39 +38,25 @@ case "$1" in
     ;;
   --read|-r)
     mode="read"
+    mode_set=1
     shift
     ;;
   --fix|-f)
     mode="fix"
+    mode_set=1
     shift
     ;;
   --sql|-s)
     mode="sql"
+    mode_set=1
     shift
     ;;
   --review)
     mode="review"
+    mode_set=1
     shift
     ;;
 esac
-
-rules=""
-
-for f in \
-  ".codex/default_prompt.txt" \
-  ".codex/agent.md" \
-  ".codex/db.md" \
-  ".codex/api.md" \
-  "AGENT.md" \
-  "AGENTS.md"
-do
-  if [ -f "$f" ]; then
-    rules="$rules
-
---- $f ---
-$(cat "$f")"
-  fi
-done
 
 case "$mode" in
   read)
@@ -89,11 +76,17 @@ case "$mode" in
     ;;
 esac
 
-codex "### 模式
-$mode_prompt
+if [ "$#" -eq 0 ]; then
+  codex
+  exit $?
+fi
 
-### 项目规则
-$rules
+if [ "$mode_set" -eq 0 ]; then
+  codex "$*"
+else
+  codex "### 模式
+$mode_prompt
 
 ### 用户需求
 $*"
+fi
