@@ -1,21 +1,22 @@
 # Codex 多模式快捷命令
 
 cx() {
+  proxy auto
   command cx "$@"
 }
 
 cxr() {
-  command cx --read "$@"
+  cx --read "$@"
 }
 
 cxf() {
-  command cx --fix "$@"
+  cx --fix "$@"
 }
 
 cxs() {
-  command cx --sql "$@"
+  cx --sql "$@"
 }
 
 cxv() {
-  command cx --review "$@"
+  cx --review "$@"
 }
