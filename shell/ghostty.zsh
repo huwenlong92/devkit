@@ -12,6 +12,27 @@ export DEVKIT_GHOSTTY_CONFIG_DIR="${DEVKIT_GHOSTTY_CONFIG_DIR:-${XDG_CONFIG_HOME
 export DEVKIT_GHOSTTY_CONFIG="${DEVKIT_GHOSTTY_CONFIG:-$DEVKIT_GHOSTTY_CONFIG_DIR/config.ghostty}"
 export DEVKIT_GHOSTTY_LEGACY_CONFIG="${DEVKIT_GHOSTTY_LEGACY_CONFIG:-$DEVKIT_GHOSTTY_CONFIG_DIR/config}"
 
+_devkit_ghostty_message() {
+  local icon="$1"
+  local label="$2"
+  local value="${3:-}"
+  local color="${4:-32}"
+  local bold reset
+
+  if [[ -t 1 ]]; then
+    bold=$'\033[1m'
+    reset=$'\033[0m'
+    printf "%s  \033[%sm%s%s%s" "$icon" "$color" "$bold" "$label" "$reset"
+  else
+    printf "%s  %s" "$icon" "$label"
+  fi
+
+  if [[ -n "$value" ]]; then
+    printf "  %s" "$value"
+  fi
+  printf "\n"
+}
+
 _devkit_ghostty_integration_path() {
   [ -n "$GHOSTTY_RESOURCES_DIR" ] || return 1
   printf '%s\n' "$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration"
@@ -51,14 +72,15 @@ ghostty_status() {
   config="$(_devkit_ghostty_config_path)"
   integration="$(_devkit_ghostty_integration_path 2>/dev/null)"
 
-  echo "TERM=${TERM:-<empty>}"
-  echo "TERM_PROGRAM=${TERM_PROGRAM:-<empty>}"
-  echo "GHOSTTY_RESOURCES_DIR=${GHOSTTY_RESOURCES_DIR:-<empty>}"
-  echo "GHOSTTY_SHELL_FEATURES=${GHOSTTY_SHELL_FEATURES:-<empty>}"
-  echo "config=$config"
-  echo "config_exists=$([ -f "$config" ] && echo yes || echo no)"
-  echo "zsh_integration=${integration:-<empty>}"
-  echo "zsh_integration_readable=$([ -n "$integration" ] && [ -r "$integration" ] && echo yes || echo no)"
+  _devkit_ghostty_message "👻" "Ghostty status" "" 36
+  printf "  %-24s %s\n" "TERM" "${TERM:-<empty>}"
+  printf "  %-24s %s\n" "TERM_PROGRAM" "${TERM_PROGRAM:-<empty>}"
+  printf "  %-24s %s\n" "GHOSTTY_RESOURCES_DIR" "${GHOSTTY_RESOURCES_DIR:-<empty>}"
+  printf "  %-24s %s\n" "GHOSTTY_SHELL_FEATURES" "${GHOSTTY_SHELL_FEATURES:-<empty>}"
+  printf "  %-24s %s\n" "config" "$config"
+  printf "  %-24s %s\n" "config_exists" "$([ -f "$config" ] && echo yes || echo no)"
+  printf "  %-24s %s\n" "zsh_integration" "${integration:-<empty>}"
+  printf "  %-24s %s\n" "zsh_integration_readable" "$([ -n "$integration" ] && [ -r "$integration" ] && echo yes || echo no)"
 }
 
 ghostty_show_config() {
@@ -68,7 +90,7 @@ ghostty_show_config() {
 
 _devkit_ghostty_command() {
   if ! command -v ghostty >/dev/null 2>&1; then
-    echo "ghostty command not found" >&2
+    _devkit_ghostty_message "❌" "ghostty command not found" "" 31 >&2
     return 1
   fi
 }
@@ -134,8 +156,8 @@ EOF
       command ghostty +ssh-cache "$@"
       ;;
     *)
-      echo "Unknown command: $1" >&2
-      echo "Try: gty --help" >&2
+      _devkit_ghostty_message "❌" "Unknown command" "$1" 31 >&2
+      _devkit_ghostty_message "👉" "Try" "gty --help" 36 >&2
       return 1
       ;;
   esac

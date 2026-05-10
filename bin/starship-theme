@@ -9,6 +9,32 @@ fi
 THEME_DIR="${DEVKIT_STARSHIP_THEME_DIR:-$DEVKIT_ROOT/config/starship/themes}"
 TARGET_CONFIG="${DEVKIT_STARSHIP_CONFIG:-$DEVKIT_ROOT/config/starship.toml}"
 
+print_message() {
+  local icon="$1"
+  local label="$2"
+  local value="${3:-}"
+  local color="${4:-32}"
+  local bold=""
+  local reset=""
+
+  if [ -t 1 ]; then
+    bold=$'\033[1m'
+    reset=$'\033[0m'
+    printf '%s  \033[%sm%s%s%s' "$icon" "$color" "$bold" "$label" "$reset"
+  else
+    printf '%s  %s' "$icon" "$label"
+  fi
+
+  if [ -n "$value" ]; then
+    printf '  %s' "$value"
+  fi
+  printf '\n'
+}
+
+print_error() {
+  print_message "❌" "$1" "${2:-}" 31 >&2
+}
+
 show_help() {
   cat <<'EOF'
 starship-theme - DevKit Starship 主题管理
@@ -55,7 +81,7 @@ theme_file() {
 
 list_themes() {
   if [ ! -d "$THEME_DIR" ]; then
-    echo "No theme directory: $THEME_DIR" >&2
+    print_error "No theme directory" "$THEME_DIR"
     exit 1
   fi
 
@@ -71,14 +97,18 @@ list_themes() {
     [ "$name" = "$current" ] && marker="*"
 
     if validate_theme "$file" >/dev/null 2>&1; then
-      printf '%s %s\n' "$marker" "$name"
+      if [ "$marker" = "*" ]; then
+        print_message "★" "$name" "current" 32
+      else
+        print_message " " "$name" "" 36
+      fi
     else
-      printf '%s %s (invalid)\n' "$marker" "$name"
+      print_message "!" "$name" "invalid" 31
     fi
   done
 
   if [ "$found" -eq 0 ]; then
-    echo "No themes found in $THEME_DIR" >&2
+    print_error "No themes found" "$THEME_DIR"
     exit 1
   fi
 }
@@ -101,37 +131,38 @@ use_theme() {
   local name="$1"
   local file
   if ! file="$(theme_file "$name")"; then
-    echo "Invalid theme name: $name" >&2
+    print_error "Invalid theme name" "$name"
     exit 1
   fi
 
   if [ ! -f "$file" ]; then
-    echo "Theme not found: $name" >&2
-    echo "Run 'starship-theme list' to see available themes." >&2
+    print_error "Theme not found" "$name"
+    print_message "👉" "Try" "starship-theme list" 36 >&2
     exit 1
   fi
 
   if ! validate_theme "$file"; then
-    echo "Invalid Starship theme: $name" >&2
-    echo "Theme file: $file" >&2
+    print_error "Invalid Starship theme" "$name"
+    print_message "📄" "Theme file" "$file" 33 >&2
     exit 1
   fi
 
   mkdir -p "$(dirname "$TARGET_CONFIG")"
   cp "$file" "$TARGET_CONFIG"
-  echo "Switched Starship theme to '$name': $TARGET_CONFIG"
+  print_message "✅" "Starship theme" "$name" 32
+  print_message "📄" "Config" "$TARGET_CONFIG" 36
 }
 
 show_theme() {
   local name="$1"
   local file
   if ! file="$(theme_file "$name")"; then
-    echo "Invalid theme name: $name" >&2
+    print_error "Invalid theme name" "$name"
     exit 1
   fi
 
   if [ ! -f "$file" ]; then
-    echo "Theme not found: $name" >&2
+    print_error "Theme not found" "$name"
     exit 1
   fi
 
@@ -147,8 +178,8 @@ case "${1:-}" in
     ;;
   use|switch)
     if [ $# -lt 2 ]; then
-      echo "Missing theme name." >&2
-      echo "Usage: starship-theme use <theme>" >&2
+      print_error "Missing theme name"
+      print_message "👉" "Usage" "starship-theme use <theme>" 36 >&2
       exit 1
     fi
     use_theme "$2"
@@ -158,8 +189,8 @@ case "${1:-}" in
     ;;
   show)
     if [ $# -lt 2 ]; then
-      echo "Missing theme name." >&2
-      echo "Usage: starship-theme show <theme>" >&2
+      print_error "Missing theme name"
+      print_message "👉" "Usage" "starship-theme show <theme>" 36 >&2
       exit 1
     fi
     show_theme "$2"
@@ -168,7 +199,7 @@ case "${1:-}" in
     printf 'themes: %s\nconfig: %s\n' "$THEME_DIR" "$TARGET_CONFIG"
     ;;
   *)
-    echo "Unknown command: $1" >&2
+    print_error "Unknown command" "$1"
     show_help >&2
     exit 1
     ;;

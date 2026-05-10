@@ -10,7 +10,7 @@ devkit() {
       command devkit "$@" || return
       source "$DEVKIT/shell/index.zsh"
       rehash 2>/dev/null
-      echo "Reloaded DevKit shell config."
+      echo "✅  DevKit shell reloaded"
       ;;
     *)
       command devkit "$@"

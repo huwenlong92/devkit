@@ -4,6 +4,32 @@ set -euo pipefail
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEVKIT_ROOT="${DEVKIT:-$SCRIPT_ROOT}"
 
+print_message() {
+  local icon="$1"
+  local label="$2"
+  local value="${3:-}"
+  local color="${4:-32}"
+  local bold=""
+  local reset=""
+
+  if [ -t 1 ]; then
+    bold=$'\033[1m'
+    reset=$'\033[0m'
+    printf '%s  \033[%sm%s%s%s' "$icon" "$color" "$bold" "$label" "$reset"
+  else
+    printf '%s  %s' "$icon" "$label"
+  fi
+
+  if [ -n "$value" ]; then
+    printf '  %s' "$value"
+  fi
+  printf '\n'
+}
+
+print_error() {
+  print_message "❌" "$1" "${2:-}" 31 >&2
+}
+
 show_help() {
   cat <<'EOF'
 devkit - DevKit 工具箱管理命令
@@ -30,7 +56,7 @@ ensure_devkit_root() {
   local root="$1"
 
   if [ ! -d "$root/.git" ] || [ ! -d "$root/bin" ] || [ ! -d "$root/shell" ]; then
-    echo "Not a DevKit git root: $root" >&2
+    print_error "Not a DevKit git root" "$root"
     exit 1
   fi
 }
@@ -41,8 +67,8 @@ refresh_devkit() {
   git -C "$DEVKIT_ROOT" pull --ff-only
 
   echo
-  echo "DevKit updated: $DEVKIT_ROOT"
-  echo "Reload current shell with:"
+  print_message "✅" "DevKit updated" "$DEVKIT_ROOT" 32
+  print_message "👉" "Reload current shell" "" 36
   printf '  source %q\n' "$DEVKIT_ROOT/shell/index.zsh"
 }
 
@@ -57,7 +83,7 @@ case "${1:-}" in
     printf '%s\n' "$DEVKIT_ROOT"
     ;;
   *)
-    echo "Unknown command: $1" >&2
+    print_error "Unknown command" "$1"
     show_help >&2
     exit 1
     ;;

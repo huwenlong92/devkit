@@ -43,6 +43,28 @@ _devkit_proxy_apply_no_proxy() {
   export NO_PROXY="$DEVKIT_NO_PROXY"
 }
 
+_devkit_proxy_message() {
+  local icon="$1"
+  local label="$2"
+  local value="${3:-}"
+  local color="${4:-32}"
+  local bold reset
+
+  if [[ -t 1 ]]; then
+    bold=$'\033[1m'
+    reset=$'\033[0m'
+    printf "%s  \033[%sm%s%s" "$icon" "$color" "$bold" "$label"
+    printf "%s" "$reset"
+  else
+    printf "%s  %s" "$icon" "$label"
+  fi
+
+  if [[ -n "$value" ]]; then
+    printf "  %s" "$value"
+  fi
+  printf "\n"
+}
+
 # ------------------------------------------------------------------------------
 # 基础开关
 # ------------------------------------------------------------------------------
@@ -56,14 +78,14 @@ proxy_on() {
   export ALL_PROXY="$all_proxy"
   _devkit_proxy_apply_no_proxy
 
-  echo "✅ Proxy ON -> $http_proxy"
+  _devkit_proxy_message "✅" "Proxy ON" "$http_proxy" 32
 }
 
 proxy_off() {
   unset http_proxy https_proxy all_proxy
   unset HTTP_PROXY HTTPS_PROXY ALL_PROXY
   unset no_proxy NO_PROXY
-  echo "❌ Proxy OFF"
+  _devkit_proxy_message "❌" "Proxy OFF" "" 31
 }
 
 proxy_status() {
@@ -143,7 +165,7 @@ proxy_http() {
   export HTTP_PROXY="$http_proxy"
   export HTTPS_PROXY="$https_proxy"
   _devkit_proxy_apply_no_proxy
-  echo "🌐 HTTP Proxy"
+  _devkit_proxy_message "🌐" "HTTP Proxy" "$http_proxy" 36
 }
 
 proxy_socks() {
@@ -152,7 +174,7 @@ proxy_socks() {
   unset HTTP_PROXY HTTPS_PROXY
   export ALL_PROXY="$all_proxy"
   _devkit_proxy_apply_no_proxy
-  echo "🧦 SOCKS Proxy"
+  _devkit_proxy_message "🧦" "SOCKS Proxy" "$all_proxy" 36
 }
 
 # ------------------------------------------------------------------------------
@@ -174,28 +196,28 @@ npm_proxy_on() {
   npm config set proxy "$_devkit_http_proxy"
   npm config set https-proxy "$_devkit_http_proxy"
   npm config set noproxy "$DEVKIT_NO_PROXY"
-  echo "📦 npm proxy ON"
+  _devkit_proxy_message "📦" "npm proxy ON" "$_devkit_http_proxy" 32
 }
 
 npm_proxy_off() {
   npm config delete proxy
   npm config delete https-proxy
   npm config delete noproxy
-  echo "📦 npm proxy OFF"
+  _devkit_proxy_message "📦" "npm proxy OFF" "" 31
 }
 
 pnpm_proxy_on() {
   pnpm config set proxy "$_devkit_http_proxy"
   pnpm config set https-proxy "$_devkit_http_proxy"
   pnpm config set noproxy "$DEVKIT_NO_PROXY"
-  echo "📦 pnpm proxy ON"
+  _devkit_proxy_message "📦" "pnpm proxy ON" "$_devkit_http_proxy" 32
 }
 
 pnpm_proxy_off() {
   pnpm config delete proxy
   pnpm config delete https-proxy
   pnpm config delete noproxy
-  echo "📦 pnpm proxy OFF"
+  _devkit_proxy_message "📦" "pnpm proxy OFF" "" 31
 }
 
 # ------------------------------------------------------------------------------
@@ -205,14 +227,14 @@ git_proxy_on() {
   git config --global http.proxy "$_devkit_http_proxy"
   git config --global https.proxy "$_devkit_http_proxy"
   git config --global http.noProxy "$DEVKIT_NO_PROXY"
-  echo "🌿 git proxy ON"
+  _devkit_proxy_message "🌿" "git proxy ON" "$_devkit_http_proxy" 32
 }
 
 git_proxy_off() {
   git config --global --unset http.proxy 2>/dev/null
   git config --global --unset https.proxy 2>/dev/null
   git config --global --unset http.noProxy 2>/dev/null
-  echo "🌿 git proxy OFF"
+  _devkit_proxy_message "🌿" "git proxy OFF" "" 31
 }
 
 # ------------------------------------------------------------------------------
@@ -229,7 +251,7 @@ proxy_auto() {
     proxy_socks
   else
     proxy_off
-    echo "⚠️ No proxy detected"
+    _devkit_proxy_message "⚠️" "No proxy detected" "" 33
   fi
 }
 
@@ -237,7 +259,7 @@ proxy_auto() {
 # 测试
 # ------------------------------------------------------------------------------
 ptest() {
-  echo "Testing proxy..."
+  _devkit_proxy_message "🧪" "Testing proxy" "$_devkit_http_proxy" 36
   p curl -I --max-time 10 https://www.google.com
 }
 
@@ -247,10 +269,10 @@ ptest() {
 proxy_use() {
   case "$1" in
     hk|sg|jp)
-      echo "🚧 switch node -> $1（后面接 clash API）"
+      _devkit_proxy_message "🚧" "Switch node" "$1（后面接 clash API）" 33
       ;;
     *)
-      echo "Usage: proxy use [hk|sg|jp]"
+      _devkit_proxy_message "👉" "Usage" "proxy use [hk|sg|jp]" 36
       ;;
   esac
 }
@@ -312,8 +334,8 @@ EOF
     use) proxy_use "$2" ;;
 
     *)
-      echo "❌ Unknown: $1"
-      echo "👉 proxy --help"
+      _devkit_proxy_message "❌" "Unknown command" "$1" 31
+      _devkit_proxy_message "👉" "Try" "proxy --help" 36
       ;;
   esac
 }
