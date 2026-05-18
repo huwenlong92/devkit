@@ -45,8 +45,32 @@ try {
 ' "$package_json"
 }
 
+_devkit_pnpm_package_uses_pnpm_scripts() {
+  local package_json="$1"
+
+  [ -f "$package_json" ] || return 1
+  command -v node >/dev/null 2>&1 || return 1
+
+  command node -e '
+const fs = require("fs");
+
+try {
+  const packageJson = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+  const scripts = packageJson.scripts || {};
+  const hasPnpmScript = Object.values(scripts).some((script) =>
+    typeof script === "string" && /(^|&&\s*|\|\|\s*|[;|()\n]\s*)pnpm(?=$|[\s;&|()\n])/.test(script.trim())
+  );
+
+  process.exit(hasPnpmScript ? 0 : 1);
+} catch (_) {
+  process.exit(1);
+}
+' "$package_json"
+}
+
 _devkit_pnpm_find_project_root() {
   local dir="${PWD:A}"
+  local package_json
   local package_manager
 
   while [ "$dir" != "/" ]; do
@@ -55,8 +79,24 @@ _devkit_pnpm_find_project_root() {
       return 0
     fi
 
-    package_manager="$(_devkit_pnpm_read_package_manager "$dir/package.json")"
+    package_json="$dir/package.json"
+    package_manager="$(_devkit_pnpm_read_package_manager "$package_json")"
     if [[ "$package_manager" == pnpm || "$package_manager" == pnpm@* ]]; then
+      print -r -- "$dir"
+      return 0
+    fi
+
+    if [ -n "$package_manager" ]; then
+      dir="${dir:h}"
+      continue
+    fi
+
+    if _devkit_pnpm_package_uses_pnpm_scripts "$package_json"; then
+      print -r -- "$dir"
+      return 0
+    fi
+
+    if [ "${DEVKIT_PNPM_ASSUME_PACKAGE_JSON:-1}" = "1" ] && [ -f "$package_json" ]; then
       print -r -- "$dir"
       return 0
     fi
@@ -99,6 +139,8 @@ _devkit_pnpm_corepack_auto_install() {
       return 1
     fi
   fi
+
+  rehash 2>/dev/null
 
   local pnpm_version
   if command -v pnpm >/dev/null 2>&1 && pnpm_version="$(command pnpm --version 2>/dev/null)" && [ -n "$pnpm_version" ]; then

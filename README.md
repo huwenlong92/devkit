@@ -12,7 +12,7 @@ DevKit 是一组面向日常开发环境的 zsh 小工具，用来把常用命�
 - eza 文件列表增强：安装 `eza` 后自动启用 `ls`、`ll`、`la`、`lt` 快捷命令。
 - gvm Go 版本管理：安装 `gvm` 后由 `shell/gvm.zsh` 统一加载 Go 版本环境、pkgset 和 Go Module 默认配置。
 - fnm Node.js 版本管理：安装 `fnm` 后自动初始化，并默认根据当前目录或父目录的 `.node-version` / `.nvmrc` 切换版本；迁移后可用 `DEVKIT_NVM_ENABLE=0` 禁用 nvm。
-- pnpm 包管理器：自动配置 `PNPM_HOME` 到 `PATH`，进入 pnpm 项目且缺少 `pnpm` 时可通过 Corepack 自动启用，并在安装后加载 zsh 补全。
+- pnpm 包管理器：自动配置 `PNPM_HOME` 到 `PATH`，进入 Node.js 项目且缺少 `pnpm` 时默认通过 Corepack 自动启用，并在安装后加载 zsh 补全。
 - 统一加载入口：通过 `shell/index.zsh` 自动加载 `shell/` 下的工具模块，方便继续扩展新的开发脚本。
 
 安装和使用说明见 [docs/usage.md](docs/usage.md)。

@@ -222,7 +222,7 @@ gvm pkgset use --local
 
 DevKit 会自动把 `PNPM_HOME` 加入 `PATH`，方便使用 `pnpm setup` 或 Corepack 安装的 pnpm；已安装 `pnpm` 时会自动加载补全。
 
-进入 pnpm 项目时，如果当前 shell 没有 `pnpm` 命令但有 `corepack`，DevKit 会自动通过 Corepack 启用 pnpm。触发条件是当前目录或父目录存在 `pnpm-lock.yaml`、`pnpm-workspace.yaml`，或 `package.json` 里声明了 `packageManager: "pnpm@..."`。
+进入 Node.js 项目时，如果当前 shell 没有 `pnpm` 命令但有 `corepack`，DevKit 会默认通过 Corepack 启用 pnpm。触发条件是当前目录或父目录存在 `package.json`、`pnpm-lock.yaml`、`pnpm-workspace.yaml`，或 `package.json` 里声明了 `packageManager: "pnpm@..."`，或 scripts 里使用了 `pnpm` 命令。若 `packageManager` 明确声明为其他包管理器，DevKit 会尊重该声明并跳过自动启用 pnpm。
 
 ```bash
 # 推荐配合 Corepack 安装
@@ -246,6 +246,9 @@ export PNPM_HOME="$HOME/.local/share/pnpm"
 
 # 禁用进入 pnpm 项目时的 Corepack 自动安装
 export DEVKIT_PNPM_COREPACK_AUTO_INSTALL=0
+
+# 只在明确的 pnpm 项目中自动启用，不把普通 package.json 项目默认视作 pnpm 项目
+export DEVKIT_PNPM_ASSUME_PACKAGE_JSON=0
 
 # 没有 packageManager 版本声明时，覆盖默认安装版本
 export DEVKIT_PNPM_COREPACK_DEFAULT=pnpm@9
