@@ -3,6 +3,17 @@
 mode="dev"
 mode_set=0
 
+run_codex() {
+  local fnm_enabled="${DEVKIT_CODEX_FNM_ENABLE:-${DEVKIT_FNM_ENABLE:-1}}"
+  local fnm_version="${DEVKIT_CODEX_FNM_VERSION:-default}"
+
+  if [ "$fnm_enabled" != "0" ] && command -v fnm >/dev/null 2>&1; then
+    command fnm exec --using "$fnm_version" codex "$@"
+  else
+    command codex "$@"
+  fi
+}
+
 show_help() {
   cat <<'EOF'
 cx - Codex 多模式快捷命令
@@ -77,14 +88,14 @@ case "$mode" in
 esac
 
 if [ "$#" -eq 0 ]; then
-  codex
+  run_codex
   exit $?
 fi
 
 if [ "$mode_set" -eq 0 ]; then
-  codex "$*"
+  run_codex "$*"
 else
-  codex "### 模式
+  run_codex "### 模式
 $mode_prompt
 
 ### 用户需求

@@ -21,6 +21,8 @@ devkit refresh
 
 ## Codex examples
 
+`codex`、`cx` 以及 `cxr` / `cxf` / `cxs` / `cxv` 默认会通过 `fnm exec --using default` 运行 Codex，避免进入其他 Node.js 项目后被 `.node-version` / `.nvmrc` 切到没有安装 Codex 的版本。
+
 ```bash
 # 开发模式：按项目规则完成开发任务
 cx "实现登录页"
@@ -40,6 +42,15 @@ cxs "优化这段慢查询"
 # 代码审查模式：只输出当前代码问题，按严重程度排列
 cx --review "看下 bin/cx 写得是否合理"
 cxv "审查最近的改动"
+```
+
+如果需要临时关闭这层固定 Node 版本的行为，可以在加载 DevKit 前设置：
+
+```bash
+export DEVKIT_CODEX_FNM_ENABLE=0
+
+# 或者指定另一个 fnm 版本/别名
+export DEVKIT_CODEX_FNM_VERSION=default
 ```
 
 ## Proxy examples
