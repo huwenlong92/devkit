@@ -194,6 +194,17 @@ export GO111MODULE="${GO111MODULE:-on}"
 export GOPROXY="${GOPROXY:-https://goproxy.cn,direct}"
 ```
 
+DevKit 默认会在 `cd` 后自动读取当前目录或父目录中的 Go 版本声明，进入项目时切到项目版本，离开项目后切回 gvm 默认版本。查找顺序是 `.go-version`、`go.work`、`go.mod`；`go.work` / `go.mod` 中优先使用 `toolchain`，没有时使用 `go`。如果项目存在 `.go-pkgset`，也会自动切换对应 pkgset。
+
+```bash
+# 项目根目录
+echo "go1.25.10" > .go-version
+
+# 或者通过 go.mod / go.work 声明
+go 1.25
+toolchain go1.25.10
+```
+
 Homebrew 的 bison 是 keg-only 包，不会默认覆盖系统自带版本；`gvm.zsh` 会自动把 `/opt/homebrew/opt/bison/bin` 或 `/usr/local/opt/bison/bin` 放到 `PATH` 前面，确保 gvm 使用 bison 3+。如果安装在其它位置，可以手动指定：
 
 ```bash
@@ -206,6 +217,9 @@ export DEVKIT_GVM_BISON_HOME="/opt/homebrew/opt/bison"
 export DEVKIT_GVM_ROOT="$HOME/.gvm"
 export DEVKIT_GVM_DEFAULT_VERSION=go1.22.5
 export DEVKIT_GVM_DEFAULT_PKGSET=global
+
+# 禁用随目录自动切换 Go 版本
+export DEVKIT_GVM_AUTO_USE=0
 
 # 或者禁用 gvm 模块，继续使用 go.zsh 的基础 GOPATH/GOBIN 配置
 export DEVKIT_GVM_ENABLE=0
