@@ -53,6 +53,28 @@ export DEVKIT_CODEX_FNM_ENABLE=0
 export DEVKIT_CODEX_FNM_VERSION=default
 ```
 
+## Claude Code examples
+
+`claude` 默认会先执行 `proxy auto`，再通过 `fnm exec --using default` 运行 Claude Code，避免进入其他 Node.js 项目后被 `.node-version` / `.nvmrc` 切到没有安装 Claude Code 的版本。
+
+```bash
+claude
+claude "分析当前改动"
+```
+
+可以在加载 DevKit 前调整默认行为：
+
+```bash
+# 禁用 claude 启动前的代理自动检测
+export DEVKIT_CLAUDE_PROXY_ENABLE=0
+
+# 禁用 claude 固定 fnm Node 版本
+export DEVKIT_CLAUDE_FNM_ENABLE=0
+
+# 或者指定另一个 fnm 版本/别名
+export DEVKIT_CLAUDE_FNM_VERSION=default
+```
+
 ## Proxy examples
 
 ```bash
