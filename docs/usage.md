@@ -122,13 +122,16 @@ fnm install --lts
 fnm use --lts
 ```
 
-默认会启用 `fnm env --use-on-cd --shell zsh`，进入包含 `.node-version` 或 `.nvmrc` 的目录时自动切换 Node.js 版本。
+默认会启用 `fnm env --shell zsh --version-file-strategy recursive --use-on-cd`，进入包含 `.node-version` 或 `.nvmrc` 的目录及其子目录时自动切换 Node.js 版本。
 
 可以在加载 DevKit 之前调整默认行为：
 
 ```bash
 # 禁用目录切换自动读取版本文件
 export DEVKIT_FNM_USE_ON_CD=0
+
+# 切回 fnm 默认的仅当前目录策略
+export DEVKIT_FNM_VERSION_FILE_STRATEGY=local
 
 # 或者禁用本模块
 export DEVKIT_FNM_ENABLE=0
@@ -217,7 +220,9 @@ gvm pkgset use --local
 
 ## pnpm package manager
 
-DevKit 会自动把 `PNPM_HOME` 加入 `PATH`，方便使用 `pnpm setup` 或 Corepack 安装的 pnpm；未安装 `pnpm` 时会安静跳过补全加载。
+DevKit 会自动把 `PNPM_HOME` 加入 `PATH`，方便使用 `pnpm setup` 或 Corepack 安装的 pnpm；已安装 `pnpm` 时会自动加载补全。
+
+进入 pnpm 项目时，如果当前 shell 没有 `pnpm` 命令但有 `corepack`，DevKit 会自动通过 Corepack 启用 pnpm。触发条件是当前目录或父目录存在 `pnpm-lock.yaml`、`pnpm-workspace.yaml`，或 `package.json` 里声明了 `packageManager: "pnpm@..."`。
 
 ```bash
 # 推荐配合 Corepack 安装
@@ -238,6 +243,12 @@ $HOME/Library/pnpm
 
 ```bash
 export PNPM_HOME="$HOME/.local/share/pnpm"
+
+# 禁用进入 pnpm 项目时的 Corepack 自动安装
+export DEVKIT_PNPM_COREPACK_AUTO_INSTALL=0
+
+# 没有 packageManager 版本声明时，覆盖默认安装版本
+export DEVKIT_PNPM_COREPACK_DEFAULT=pnpm@9
 
 # 或者禁用本模块
 export DEVKIT_PNPM_ENABLE=0

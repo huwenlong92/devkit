@@ -13,15 +13,18 @@ if ! command -v fnm >/dev/null 2>&1; then
   return 0 2>/dev/null || exit 0
 fi
 
-# 默认开启目录切换时自动读取 .node-version / .nvmrc。
-_devkit_fnm_env_options="--shell zsh"
+# 默认开启目录切换时自动递归读取 .node-version / .nvmrc。
+_devkit_fnm_version_file_strategy="${DEVKIT_FNM_VERSION_FILE_STRATEGY:-recursive}"
+_devkit_fnm_env_options="--shell zsh --version-file-strategy $_devkit_fnm_version_file_strategy"
 if [ "${DEVKIT_FNM_USE_ON_CD:-1}" = "1" ]; then
   _devkit_fnm_env_options="$_devkit_fnm_env_options --use-on-cd"
 fi
 
 eval "$(command fnm env ${(z)_devkit_fnm_env_options})"
 
-# 加载 fnm 命令补全；旧版本不支持 completions 时安静跳过。
-eval "$(command fnm completions --shell zsh 2>/dev/null)"
+# 加载 fnm 命令补全；旧版本不支持 completions 或 compinit 未加载时安静跳过。
+if (( $+functions[compdef] )); then
+  eval "$(command fnm completions --shell zsh 2>/dev/null)"
+fi
 
-unset _devkit_fnm_env_options
+unset _devkit_fnm_env_options _devkit_fnm_version_file_strategy
