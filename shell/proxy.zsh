@@ -6,7 +6,7 @@
 # 基础配置
 # ------------------------------------------------------------------------------
 export DEVKIT_PROXY_HOST="${DEVKIT_PROXY_HOST:-127.0.0.1}"
-export DEVKIT_HTTP_PROXY_PORT="${DEVKIT_HTTP_PROXY_PORT:-6666}"
+export DEVKIT_HTTP_PROXY_PORT="${DEVKIT_HTTP_PROXY_PORT:-7890}"
 export DEVKIT_SOCKS_PROXY_PORT="${DEVKIT_SOCKS_PROXY_PORT:-7890}"
 typeset -ga DEVKIT_NO_PROXY_ITEMS
 
