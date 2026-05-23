@@ -8,6 +8,18 @@
 export DEVKIT_PROXY_HOST="${DEVKIT_PROXY_HOST:-127.0.0.1}"
 export DEVKIT_HTTP_PROXY_PORT="${DEVKIT_HTTP_PROXY_PORT:-7890}"
 export DEVKIT_SOCKS_PROXY_PORT="${DEVKIT_SOCKS_PROXY_PORT:-7890}"
+if [[ -z "${DEVKIT_PROXY_PORTS:-}" ]]; then
+  case "$DEVKIT_HTTP_PROXY_PORT" in
+    7890) export DEVKIT_PROXY_PORTS="7890,6666" ;;
+    6666) export DEVKIT_PROXY_PORTS="6666,7890" ;;
+    *) export DEVKIT_PROXY_PORTS="${DEVKIT_HTTP_PROXY_PORT},7890,6666" ;;
+  esac
+else
+  export DEVKIT_PROXY_PORTS
+fi
+export DEVKIT_PROXY_CHECK_URL="${DEVKIT_PROXY_CHECK_URL:-https://www.google.com/generate_204}"
+export DEVKIT_PROXY_CHECK_TIMEOUT="${DEVKIT_PROXY_CHECK_TIMEOUT:-5}"
+export DEVKIT_PROXY_CONNECT_TIMEOUT="${DEVKIT_PROXY_CONNECT_TIMEOUT:-2}"
 typeset -ga DEVKIT_NO_PROXY_ITEMS
 
 if [[ -n "${DEVKIT_NO_PROXY:-}" ]]; then
@@ -33,9 +45,19 @@ _devkit_proxy_refresh_no_proxy() {
 
 _devkit_proxy_refresh_no_proxy
 
+_devkit_proxy_refresh_urls() {
+  _devkit_http_proxy="http://${DEVKIT_PROXY_HOST}:${DEVKIT_HTTP_PROXY_PORT}"
+  _devkit_socks_proxy="socks5://${DEVKIT_PROXY_HOST}:${DEVKIT_SOCKS_PROXY_PORT}"
+}
+
+_devkit_proxy_use_port() {
+  export DEVKIT_HTTP_PROXY_PORT="$1"
+  export DEVKIT_SOCKS_PROXY_PORT="$1"
+  _devkit_proxy_refresh_urls
+}
+
 # 代理地址
-_devkit_http_proxy="http://${DEVKIT_PROXY_HOST}:${DEVKIT_HTTP_PROXY_PORT}"
-_devkit_socks_proxy="socks5://${DEVKIT_PROXY_HOST}:${DEVKIT_SOCKS_PROXY_PORT}"
+_devkit_proxy_refresh_urls
 
 _devkit_proxy_apply_no_proxy() {
   _devkit_proxy_refresh_no_proxy
@@ -130,6 +152,7 @@ proxy_status() {
   printf "  ${dim}%-12s${reset} %s\n" "host" "$DEVKIT_PROXY_HOST"
   printf "  ${dim}%-12s${reset} %s\n" "http port" "$DEVKIT_HTTP_PROXY_PORT"
   printf "  ${dim}%-12s${reset} %s\n" "socks port" "$DEVKIT_SOCKS_PROXY_PORT"
+  printf "  ${dim}%-12s${reset} %s\n" "auto ports" "$DEVKIT_PROXY_PORTS"
 
   echo
   echo "${bold}${cyan}Environment${reset}"
@@ -244,15 +267,41 @@ _devkit_check_port() {
   nc -z "$DEVKIT_PROXY_HOST" "$1" >/dev/null 2>&1
 }
 
+_devkit_check_proxy() {
+  local port="$1"
+  local proxy_url="http://${DEVKIT_PROXY_HOST}:${port}"
+
+  _devkit_check_port "$port" || return 1
+
+  (( $+commands[curl] )) || return 0
+
+  curl -fsS -o /dev/null \
+    --connect-timeout "$DEVKIT_PROXY_CONNECT_TIMEOUT" \
+    --max-time "$DEVKIT_PROXY_CHECK_TIMEOUT" \
+    --proxy "$proxy_url" \
+    "$DEVKIT_PROXY_CHECK_URL" >/dev/null 2>&1
+}
+
 proxy_auto() {
-  if _devkit_check_port "$DEVKIT_HTTP_PROXY_PORT"; then
-    proxy_on
-  elif _devkit_check_port "$DEVKIT_SOCKS_PROXY_PORT"; then
-    proxy_socks
-  else
-    proxy_off
-    _devkit_proxy_message "⚠️" "No proxy detected" "" 33
-  fi
+  local -a candidate_ports checked_ports
+  local port
+
+  candidate_ports=("${(@s:,:)DEVKIT_PROXY_PORTS}")
+
+  for port in "${candidate_ports[@]}"; do
+    [[ -n "$port" ]] || continue
+    (( ${checked_ports[(Ie)$port]} )) && continue
+    checked_ports+=("$port")
+
+    if _devkit_check_proxy "$port"; then
+      _devkit_proxy_use_port "$port"
+      proxy_on
+      return
+    fi
+  done
+
+  proxy_off
+  _devkit_proxy_message "⚠️" "No proxy detected" "$DEVKIT_PROXY_PORTS" 33
 }
 
 # ------------------------------------------------------------------------------

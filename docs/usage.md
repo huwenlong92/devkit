@@ -95,6 +95,13 @@ proxy git on
 proxy git off
 ```
 
+`proxy auto` 会按 `DEVKIT_PROXY_PORTS` 的顺序探测可用代理，默认包含当前配置端口、`7890` 和 `6666`。如果两个本地代理客户端分别监听不同端口，哪个端口当前能通过代理访问测试 URL，就会自动切到哪个端口：
+
+```bash
+export DEVKIT_PROXY_PORTS="7890,6666"
+export DEVKIT_PROXY_CHECK_URL="https://www.google.com/generate_204"
+```
+
 默认会通过 `no_proxy/NO_PROXY` 让本机和常见内网地址不走代理：
 
 ```bash
