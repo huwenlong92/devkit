@@ -271,9 +271,10 @@ _devkit_check_proxy() {
   local port="$1"
   local proxy_url="http://${DEVKIT_PROXY_HOST}:${port}"
 
-  _devkit_check_port "$port" || return 1
-
-  (( $+commands[curl] )) || return 0
+  if ! (( $+commands[curl] )); then
+    _devkit_check_port "$port"
+    return
+  fi
 
   curl -fsS -o /dev/null \
     --connect-timeout "$DEVKIT_PROXY_CONNECT_TIMEOUT" \
