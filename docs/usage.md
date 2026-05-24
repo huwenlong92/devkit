@@ -82,6 +82,10 @@ proxy status
 proxy on
 proxy off
 proxy auto
+proxy check
+
+# 直接检测当前网络 / VPN 出口
+vpncheck
 
 # 临时使用代理执行命令
 p curl -I https://www.google.com
@@ -93,6 +97,11 @@ proxy pnpm on
 proxy pnpm off
 proxy git on
 proxy git off
+
+# 端口转发（默认 127.0.0.1:6666 -> 127.0.0.1:7890）
+proxy forward start
+proxy forward status
+proxy forward stop
 ```
 
 `proxy auto` 会按 `DEVKIT_PROXY_PORTS` 的顺序探测可用代理，默认包含当前配置端口、`7890` 和 `6666`。如果两个本地代理客户端分别监听不同端口，哪个端口当前能通过代理访问测试 URL，就会自动切到哪个端口：
@@ -100,6 +109,18 @@ proxy git off
 ```bash
 export DEVKIT_PROXY_PORTS="7890,6666"
 export DEVKIT_PROXY_CHECK_URL="https://www.google.com/generate_204"
+```
+
+`proxy check` 会通过 DevKit 当前代理检测外网访问，并请求 `ipinfo.io/json` 显示出口 IP、位置、运营商和时区。`vpncheck` 则不强制套 DevKit 代理，用当前 shell 网络环境直接检测，适合确认系统 VPN 是否生效。
+
+```bash
+export DEVKIT_PROXY_IPINFO_URL="https://ipinfo.io/json"
+```
+
+`proxy forward` 依赖 `socat`。如果没有安装，运行 `proxy forward start` 时会提示安装命令；也可以提前安装：
+
+```bash
+brew install socat
 ```
 
 默认会通过 `no_proxy/NO_PROXY` 让本机和常见内网地址不走代理：

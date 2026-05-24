@@ -18,8 +18,12 @@ else
   export DEVKIT_PROXY_PORTS
 fi
 export DEVKIT_PROXY_CHECK_URL="${DEVKIT_PROXY_CHECK_URL:-https://www.google.com/generate_204}"
+export DEVKIT_PROXY_IPINFO_URL="${DEVKIT_PROXY_IPINFO_URL:-https://ipinfo.io/json}"
 export DEVKIT_PROXY_CHECK_TIMEOUT="${DEVKIT_PROXY_CHECK_TIMEOUT:-5}"
 export DEVKIT_PROXY_CONNECT_TIMEOUT="${DEVKIT_PROXY_CONNECT_TIMEOUT:-2}"
+export DEVKIT_PROXY_FORWARD_LISTEN_PORT="${DEVKIT_PROXY_FORWARD_LISTEN_PORT:-6666}"
+export DEVKIT_PROXY_FORWARD_TARGET_PORT="${DEVKIT_PROXY_FORWARD_TARGET_PORT:-7890}"
+export DEVKIT_PROXY_FORWARD_PID_DIR="${DEVKIT_PROXY_FORWARD_PID_DIR:-/tmp}"
 typeset -ga DEVKIT_NO_PROXY_ITEMS
 
 if [[ -n "${DEVKIT_NO_PROXY:-}" ]]; then
@@ -306,11 +310,191 @@ proxy_auto() {
 }
 
 # ------------------------------------------------------------------------------
+# 端口转发
+# ------------------------------------------------------------------------------
+_devkit_proxy_forward_pid_file() {
+  local listen="${1:-$DEVKIT_PROXY_FORWARD_LISTEN_PORT}"
+  echo "${DEVKIT_PROXY_FORWARD_PID_DIR}/devkit-proxy-forward-${DEVKIT_PROXY_HOST}-${listen}.pid"
+}
+
+start_forward() {
+  local listen="${1:-$DEVKIT_PROXY_FORWARD_LISTEN_PORT}"
+  local target="${2:-$DEVKIT_PROXY_FORWARD_TARGET_PORT}"
+  local pid_file old_pid pid
+
+  if ! (( $+commands[socat] )); then
+    _devkit_proxy_message "❌" "Missing command" "socat" 31
+    _devkit_proxy_message "👉" "Install" "brew install socat" 36
+    return 127
+  fi
+
+  pid_file="$(_devkit_proxy_forward_pid_file "$listen")"
+
+  if [[ -f "$pid_file" ]]; then
+    old_pid="$(cat "$pid_file")"
+    if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
+      _devkit_proxy_message "ℹ️" "Forward already running" "${DEVKIT_PROXY_HOST}:${listen}, pid=${old_pid}" 36
+      return 0
+    fi
+    rm -f "$pid_file"
+  fi
+
+  socat "TCP-LISTEN:${listen},bind=${DEVKIT_PROXY_HOST},reuseaddr,fork" "TCP:${DEVKIT_PROXY_HOST}:${target}" &
+  pid="$!"
+  echo "$pid" > "$pid_file"
+
+  sleep 0.2
+  if ! kill -0 "$pid" 2>/dev/null; then
+    rm -f "$pid_file"
+    _devkit_proxy_message "❌" "Forward failed" "${DEVKIT_PROXY_HOST}:${listen} -> ${DEVKIT_PROXY_HOST}:${target}" 31
+    return 1
+  fi
+
+  disown "$pid" 2>/dev/null || true
+  _devkit_proxy_message "🔁" "Forward ON" "${DEVKIT_PROXY_HOST}:${listen} -> ${DEVKIT_PROXY_HOST}:${target}, pid=${pid}" 32
+}
+
+stop_forward() {
+  local listen="${1:-$DEVKIT_PROXY_FORWARD_LISTEN_PORT}"
+  local pid_file pid
+
+  pid_file="$(_devkit_proxy_forward_pid_file "$listen")"
+
+  if [[ ! -f "$pid_file" ]]; then
+    _devkit_proxy_message "ℹ️" "Forward not running" "${DEVKIT_PROXY_HOST}:${listen}" 36
+    return 0
+  fi
+
+  pid="$(cat "$pid_file")"
+
+  if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null || true
+    _devkit_proxy_message "⏹️" "Forward OFF" "${DEVKIT_PROXY_HOST}:${listen}, pid=${pid}" 31
+  else
+    _devkit_proxy_message "🧹" "Forward stale pid removed" "${DEVKIT_PROXY_HOST}:${listen}" 33
+  fi
+
+  rm -f "$pid_file"
+}
+
+forward_status() {
+  local listen="${1:-$DEVKIT_PROXY_FORWARD_LISTEN_PORT}"
+  local pid_file pid
+
+  pid_file="$(_devkit_proxy_forward_pid_file "$listen")"
+
+  if [[ ! -f "$pid_file" ]]; then
+    _devkit_proxy_message "ℹ️" "Forward not running" "${DEVKIT_PROXY_HOST}:${listen}" 36
+    return 0
+  fi
+
+  pid="$(cat "$pid_file")"
+  if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+    _devkit_proxy_message "🔁" "Forward running" "${DEVKIT_PROXY_HOST}:${listen}, pid=${pid}" 32
+  else
+    _devkit_proxy_message "🧹" "Forward stale pid" "${DEVKIT_PROXY_HOST}:${listen}, pid=${pid}" 33
+  fi
+}
+
+proxy_forward() {
+  case "$1" in
+    ""|start)
+      start_forward "$2" "$3"
+      ;;
+    stop)
+      stop_forward "$2"
+      ;;
+    status)
+      forward_status "$2"
+      ;;
+    *)
+      _devkit_proxy_message "👉" "Usage" "proxy forward start [listen] [target] | stop [listen] | status [listen]" 36
+      ;;
+  esac
+}
+
+# ------------------------------------------------------------------------------
 # 测试
 # ------------------------------------------------------------------------------
+_devkit_json_get() {
+  local json="$1"
+  local key="$2"
+
+  if (( $+commands[jq] )); then
+    printf '%s' "$json" | jq -r --arg key "$key" '.[$key] // empty' 2>/dev/null
+    return
+  fi
+
+  printf '%s\n' "$json" | sed -nE "s/^[[:space:]]*\"${key}\"[[:space:]]*:[[:space:]]*\"?([^\",}]*)\"?,?[[:space:]]*$/\\1/p" | head -n 1
+}
+
+_devkit_network_check() {
+  local use_devkit_proxy="${1:-0}"
+  local route_label route_value info_json access_status info_status
+  local ip city region country loc org timezone
+  local -a curl_cmd
+
+  if ! (( $+commands[curl] )); then
+    _devkit_proxy_message "❌" "Missing command" "curl" 31
+    return 127
+  fi
+
+  if [[ "$use_devkit_proxy" == "1" ]]; then
+    curl_cmd=(p curl)
+    route_label="Testing proxy"
+    route_value="$_devkit_http_proxy"
+  else
+    curl_cmd=(curl)
+    route_label="Testing network"
+    route_value="${http_proxy:-${HTTP_PROXY:-direct}}"
+  fi
+
+  _devkit_proxy_message "🧪" "$route_label" "$route_value" 36
+
+  if "${curl_cmd[@]}" -fsS -o /dev/null \
+    --connect-timeout "$DEVKIT_PROXY_CONNECT_TIMEOUT" \
+    --max-time "$DEVKIT_PROXY_CHECK_TIMEOUT" \
+    "$DEVKIT_PROXY_CHECK_URL" >/dev/null 2>&1; then
+    _devkit_proxy_message "✅" "External access" "$DEVKIT_PROXY_CHECK_URL" 32
+    access_status=0
+  else
+    _devkit_proxy_message "❌" "External access failed" "$DEVKIT_PROXY_CHECK_URL" 31
+    access_status=1
+  fi
+
+  info_json="$("${curl_cmd[@]}" -fsSL \
+    --connect-timeout "$DEVKIT_PROXY_CONNECT_TIMEOUT" \
+    --max-time "$DEVKIT_PROXY_CHECK_TIMEOUT" \
+    "$DEVKIT_PROXY_IPINFO_URL" 2>/dev/null)"
+  info_status="$?"
+
+  if [[ "$info_status" == "0" && -n "$info_json" ]]; then
+    ip="$(_devkit_json_get "$info_json" "ip")"
+    city="$(_devkit_json_get "$info_json" "city")"
+    region="$(_devkit_json_get "$info_json" "region")"
+    country="$(_devkit_json_get "$info_json" "country")"
+    loc="$(_devkit_json_get "$info_json" "loc")"
+    org="$(_devkit_json_get "$info_json" "org")"
+    timezone="$(_devkit_json_get "$info_json" "timezone")"
+
+    [[ -n "$ip" ]] && _devkit_proxy_message "🌐" "IP" "$ip" 36
+    [[ -n "$city$region$country" ]] && _devkit_proxy_message "📍" "Location" "${city}${city:+, }${region}${region:+, }${country}" 36
+    [[ -n "$loc" ]] && _devkit_proxy_message "🧭" "Coordinates" "$loc" 36
+    [[ -n "$org" ]] && _devkit_proxy_message "🏢" "Org" "$org" 36
+    [[ -n "$timezone" ]] && _devkit_proxy_message "🕒" "Timezone" "$timezone" 36
+  else
+    _devkit_proxy_message "⚠️" "IP info unavailable" "$DEVKIT_PROXY_IPINFO_URL" 33
+  fi
+
+  return "$access_status"
+}
+
 ptest() {
-  _devkit_proxy_message "🧪" "Testing proxy" "$_devkit_http_proxy" 36
-  p curl -I --max-time 10 https://www.google.com
+  _devkit_network_check 1
+}
+
+vpncheck() {
+  _devkit_network_check 0
 }
 
 # ------------------------------------------------------------------------------
@@ -342,6 +526,7 @@ proxy() {
   proxy off
   proxy status
   proxy auto
+  proxy check
   proxy test
 
 模式：
@@ -352,12 +537,22 @@ proxy() {
   proxy npm on|off
   proxy pnpm on|off
   proxy git on|off
+  proxy forward start [listen] [target]
+  proxy forward stop [listen]
+  proxy forward status [listen]
+
+依赖：
+  proxy forward 需要 socat；未安装时执行：brew install socat
 
 节点（预留）：
   proxy use hk|sg|jp
 
 推荐：
+  vpncheck
+  proxy check
   p curl google.com
+  start_forward
+  stop_forward
 
 EOF
       ;;
@@ -366,7 +561,7 @@ EOF
     off) proxy_off ;;
     status) proxy_status ;;
     auto) proxy_auto ;;
-    test) ptest ;;
+    check|test) ptest ;;
 
     http) proxy_http ;;
     socks) proxy_socks ;;
@@ -380,6 +575,8 @@ EOF
     git)
       [[ "$2" == "on" ]] && git_proxy_on || git_proxy_off
       ;;
+
+    forward) proxy_forward "$2" "$3" "$4" ;;
 
     use) proxy_use "$2" ;;
 
@@ -397,3 +594,7 @@ alias pon="proxy_on"
 alias poff="proxy_off"
 alias psx="proxy_status"
 alias pauto="proxy_auto"
+alias pcheck="ptest"
+alias vcheck="vpncheck"
+alias fwdon="start_forward"
+alias fwdoff="stop_forward"
