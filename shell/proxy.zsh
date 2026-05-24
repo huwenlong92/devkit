@@ -19,6 +19,7 @@ else
 fi
 export DEVKIT_PROXY_CHECK_URL="${DEVKIT_PROXY_CHECK_URL:-https://www.google.com/generate_204}"
 export DEVKIT_PROXY_IPINFO_URL="${DEVKIT_PROXY_IPINFO_URL:-https://ipinfo.io/json}"
+export DEVKIT_PROXY_IPINFO_V6_URL="${DEVKIT_PROXY_IPINFO_V6_URL:-https://ipinfo.io/json}"
 export DEVKIT_PROXY_CHECK_TIMEOUT="${DEVKIT_PROXY_CHECK_TIMEOUT:-5}"
 export DEVKIT_PROXY_CONNECT_TIMEOUT="${DEVKIT_PROXY_CONNECT_TIMEOUT:-2}"
 export DEVKIT_PROXY_FORWARD_LISTEN_PORT="${DEVKIT_PROXY_FORWARD_LISTEN_PORT:-6666}"
@@ -428,10 +429,31 @@ _devkit_json_get() {
   printf '%s\n' "$json" | sed -nE "s/^[[:space:]]*\"${key}\"[[:space:]]*:[[:space:]]*\"?([^\",}]*)\"?,?[[:space:]]*$/\\1/p" | head -n 1
 }
 
+_devkit_print_ipinfo() {
+  local info_json="$1"
+  local ip city region country loc org timezone printed
+
+  printed=0
+  ip="$(_devkit_json_get "$info_json" "ip")"
+  city="$(_devkit_json_get "$info_json" "city")"
+  region="$(_devkit_json_get "$info_json" "region")"
+  country="$(_devkit_json_get "$info_json" "country")"
+  loc="$(_devkit_json_get "$info_json" "loc")"
+  org="$(_devkit_json_get "$info_json" "org")"
+  timezone="$(_devkit_json_get "$info_json" "timezone")"
+
+  [[ -n "$ip" ]] && { _devkit_proxy_message "🌐" "IP" "$ip" 36; printed=1; }
+  [[ -n "$city$region$country" ]] && { _devkit_proxy_message "📍" "Location" "${city}${city:+, }${region}${region:+, }${country}" 36; printed=1; }
+  [[ -n "$loc" ]] && { _devkit_proxy_message "🧭" "Coordinates" "$loc" 36; printed=1; }
+  [[ -n "$org" ]] && { _devkit_proxy_message "🏢" "Org" "$org" 36; printed=1; }
+  [[ -n "$timezone" ]] && { _devkit_proxy_message "🕒" "Timezone" "$timezone" 36; printed=1; }
+
+  (( printed ))
+}
+
 _devkit_network_check() {
   local use_devkit_proxy="${1:-0}"
   local route_label route_value info_json access_status info_status
-  local ip city region country loc org timezone
   local -a curl_cmd
 
   if ! (( $+commands[curl] )); then
@@ -469,24 +491,131 @@ _devkit_network_check() {
   info_status="$?"
 
   if [[ "$info_status" == "0" && -n "$info_json" ]]; then
-    ip="$(_devkit_json_get "$info_json" "ip")"
-    city="$(_devkit_json_get "$info_json" "city")"
-    region="$(_devkit_json_get "$info_json" "region")"
-    country="$(_devkit_json_get "$info_json" "country")"
-    loc="$(_devkit_json_get "$info_json" "loc")"
-    org="$(_devkit_json_get "$info_json" "org")"
-    timezone="$(_devkit_json_get "$info_json" "timezone")"
-
-    [[ -n "$ip" ]] && _devkit_proxy_message "🌐" "IP" "$ip" 36
-    [[ -n "$city$region$country" ]] && _devkit_proxy_message "📍" "Location" "${city}${city:+, }${region}${region:+, }${country}" 36
-    [[ -n "$loc" ]] && _devkit_proxy_message "🧭" "Coordinates" "$loc" 36
-    [[ -n "$org" ]] && _devkit_proxy_message "🏢" "Org" "$org" 36
-    [[ -n "$timezone" ]] && _devkit_proxy_message "🕒" "Timezone" "$timezone" 36
+    _devkit_print_ipinfo "$info_json" || _devkit_proxy_message "⚠️" "IP info unavailable" "$DEVKIT_PROXY_IPINFO_URL" 33
   else
     _devkit_proxy_message "⚠️" "IP info unavailable" "$DEVKIT_PROXY_IPINFO_URL" 33
   fi
 
   return "$access_status"
+}
+
+_devkit_primary_interface() {
+  local iface
+
+  if (( $+commands[route] )); then
+    iface="$(route -n get default 2>/dev/null | awk '/interface:/{print $2; exit}')"
+  fi
+  if [[ -z "$iface" ]] && (( $+commands[netstat] )); then
+    iface="$(netstat -rn -f inet 2>/dev/null | awk '$1 == "default" && $NF !~ /^(lo|utun|awdl|llw|bridge)/ {print $NF; exit}')"
+  fi
+  if [[ -z "$iface" ]] && (( $+commands[ip] )); then
+    iface="$(ip route show default 2>/dev/null | awk '{print $5; exit}')"
+  fi
+
+  printf '%s\n' "$iface"
+}
+
+_devkit_print_lan_ips() {
+  local found iface ip
+
+  found=0
+  iface="$(_devkit_primary_interface)"
+
+  if [[ -n "$iface" ]]; then
+    if (( $+commands[ipconfig] )); then
+      ip="$(ipconfig getifaddr "$iface" 2>/dev/null)"
+    fi
+    if [[ -z "$ip" ]] && (( $+commands[ifconfig] )); then
+      ip="$(ifconfig "$iface" 2>/dev/null | awk '/^[[:space:]]*inet / && $2 != "127.0.0.1" {print $2; exit}')"
+    elif [[ -z "$ip" ]] && (( $+commands[ip] )); then
+      ip="$(ip -o -4 addr show dev "$iface" scope global 2>/dev/null | awk '{ split($4, a, "/"); print a[1]; exit }')"
+    fi
+
+    if [[ -n "$ip" ]]; then
+      _devkit_proxy_message "🏠" "LAN IPv4" "${iface}: ${ip}" 36
+      found=1
+    fi
+
+    if (( $+commands[ifconfig] )); then
+      while read -r ip; do
+        [[ -n "$ip" ]] || continue
+        _devkit_proxy_message "🏠" "LAN IPv6" "${iface}: ${ip}" 36
+        found=1
+      done < <(ifconfig "$iface" 2>/dev/null | awk '/^[[:space:]]*inet6 / && $2 != "::1" && $2 !~ /^fe80:/ {print $2}')
+    elif (( $+commands[ip] )); then
+      while read -r ip; do
+        [[ -n "$ip" ]] || continue
+        _devkit_proxy_message "🏠" "LAN IPv6" "${iface}: ${ip}" 36
+        found=1
+      done < <(ip -o -6 addr show dev "$iface" scope global 2>/dev/null | awk '{ split($4, a, "/"); print a[1] }')
+    fi
+  fi
+
+  if ! (( found )); then
+    _devkit_proxy_message "⚠️" "LAN IP unavailable" "no non-loopback IPv4/IPv6 found" 33
+    return 1
+  fi
+}
+
+ipcheck() {
+  local info_json info_status public_found
+  local -a curl_cmd
+
+  if ! (( $+commands[curl] )); then
+    _devkit_proxy_message "❌" "Missing command" "curl" 31
+    return 127
+  fi
+
+  public_found=0
+  _devkit_print_lan_ips
+  _devkit_proxy_message "🧪" "Testing direct public IP" "no proxy" 36
+
+  curl_cmd=(
+    env
+    -u http_proxy
+    -u https_proxy
+    -u all_proxy
+    -u HTTP_PROXY
+    -u HTTPS_PROXY
+    -u ALL_PROXY
+    curl
+    --noproxy "*"
+  )
+
+  info_json="$("${curl_cmd[@]}" -fsSL \
+    --connect-timeout "$DEVKIT_PROXY_CONNECT_TIMEOUT" \
+    --max-time "$DEVKIT_PROXY_CHECK_TIMEOUT" \
+    "$DEVKIT_PROXY_IPINFO_URL" 2>/dev/null)"
+  info_status="$?"
+
+  if [[ "$info_status" == "0" && -n "$info_json" ]]; then
+    if _devkit_print_ipinfo "$info_json"; then
+      public_found=1
+    else
+      _devkit_proxy_message "⚠️" "Direct IP unavailable" "$DEVKIT_PROXY_IPINFO_URL" 33
+    fi
+  else
+    _devkit_proxy_message "❌" "Direct IP unavailable" "$DEVKIT_PROXY_IPINFO_URL" 31
+  fi
+
+  _devkit_proxy_message "🧪" "Testing direct public IPv6" "no proxy" 36
+  info_json="$("${curl_cmd[@]}" -6 -fsSL \
+    --connect-timeout "$DEVKIT_PROXY_CONNECT_TIMEOUT" \
+    --max-time "$DEVKIT_PROXY_CHECK_TIMEOUT" \
+    "$DEVKIT_PROXY_IPINFO_V6_URL" 2>/dev/null)"
+  info_status="$?"
+
+  if [[ "$info_status" == "0" && -n "$info_json" ]]; then
+    if _devkit_print_ipinfo "$info_json"; then
+      public_found=1
+    else
+      _devkit_proxy_message "ℹ️" "Public IPv6 unavailable" "$DEVKIT_PROXY_IPINFO_V6_URL" 36
+    fi
+  else
+    _devkit_proxy_message "ℹ️" "Public IPv6 unavailable" "$DEVKIT_PROXY_IPINFO_V6_URL" 36
+  fi
+
+  (( public_found ))
 }
 
 ptest() {
@@ -527,6 +656,7 @@ proxy() {
   proxy status
   proxy auto
   proxy check
+  proxy ip
   proxy test
 
 模式：
@@ -548,6 +678,7 @@ proxy() {
   proxy use hk|sg|jp
 
 推荐：
+  ipcheck
   vpncheck
   proxy check
   p curl google.com
@@ -562,6 +693,7 @@ EOF
     status) proxy_status ;;
     auto) proxy_auto ;;
     check|test) ptest ;;
+    ip|ipcheck) ipcheck ;;
 
     http) proxy_http ;;
     socks) proxy_socks ;;
@@ -596,5 +728,6 @@ alias psx="proxy_status"
 alias pauto="proxy_auto"
 alias pcheck="ptest"
 alias vcheck="vpncheck"
+alias myip="ipcheck"
 alias fwdon="start_forward"
 alias fwdoff="stop_forward"

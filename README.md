@@ -7,7 +7,7 @@ DevKit 是一组面向日常开发环境的 zsh 小工具，用来把常用命�
 - DevKit 管理命令：`devkit refresh`，用于拉取最新仓库内容并重新加载当前 shell 配置。
 - Codex 多模式快捷命令：`codex`、`cx`、`cxr`、`cxf`、`cxs`、`cxv`，默认通过 `fnm default` 的 Node.js 版本运行，用于开发、只读分析、修复、SQL 检查和代码审查等场景。
 - Claude Code 快捷命令：`claude` 会先自动检测并开启代理，再通过 `fnm default` 的 Node.js 版本运行，避免进入项目后被本地 Node 版本切走。
-- 代理管理命令：`proxy on|off|status|auto|check`，以及 npm、pnpm、git 代理开关、VPN/出口 IP 检测 `vpncheck`、端口转发 `proxy forward` 和临时代理执行命令 `p`。
+- 代理管理命令：`proxy on|off|status|auto|check|ip`，以及 npm、pnpm、git 代理开关、VPN/出口 IP 检测 `vpncheck`、本机/直连 IP 检测 `ipcheck`、端口转发 `proxy forward` 和临时代理执行命令 `p`。
 - Starship prompt：内置主题库 `config/starship/themes/`，可用 `starship-theme` 切换到本机的 `config/starship.toml`。
 - Ghostty 终端集成：在 Ghostty 内自动加载 zsh shell integration，并提供 `gty` 查看、编辑配置和检查环境。
 - eza 文件列表增强：安装 `eza` 后自动启用 `ls`、`ll`、`la`、`lt` 快捷命令。

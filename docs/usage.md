@@ -83,6 +83,10 @@ proxy on
 proxy off
 proxy auto
 proxy check
+proxy ip
+
+# 查看本机局域网 IP，以及不走代理的公网出口 IP / IPv6
+ipcheck
 
 # 直接检测当前网络 / VPN 出口
 vpncheck
@@ -113,8 +117,11 @@ export DEVKIT_PROXY_CHECK_URL="https://www.google.com/generate_204"
 
 `proxy check` 会通过 DevKit 当前代理检测外网访问，并请求 `ipinfo.io/json` 显示出口 IP、位置、运营商和时区。`vpncheck` 则不强制套 DevKit 代理，用当前 shell 网络环境直接检测，适合确认系统 VPN 是否生效。
 
+`ipcheck` / `proxy ip` 会显示本机非 loopback 的局域网 IPv4/IPv6，并强制绕过 shell 代理查询公网出口 IP；如果当前网络有可用公网 IPv6，也会额外显示 IPv6 出口。
+
 ```bash
 export DEVKIT_PROXY_IPINFO_URL="https://ipinfo.io/json"
+export DEVKIT_PROXY_IPINFO_V6_URL="https://ipinfo.io/json"
 ```
 
 `proxy forward` 依赖 `socat`。如果没有安装，运行 `proxy forward start` 时会提示安装命令；也可以提前安装：
