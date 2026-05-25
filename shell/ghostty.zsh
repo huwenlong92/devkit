@@ -88,6 +88,29 @@ ghostty_show_config() {
   command ghostty +show-config "$@"
 }
 
+ghostty_install_terminfo() {
+  local term="${DEVKIT_GHOSTTY_TERMINFO:-xterm-ghostty}"
+
+  if [ $# -lt 1 ]; then
+    _devkit_ghostty_message "❌" "Missing ssh target" "" 31 >&2
+    _devkit_ghostty_message "👉" "Usage" "gty install-terminfo user@host" 36 >&2
+    return 1
+  fi
+
+  if ! command -v infocmp >/dev/null 2>&1; then
+    _devkit_ghostty_message "❌" "infocmp command not found" "" 31 >&2
+    return 1
+  fi
+
+  if ! command -v ssh >/dev/null 2>&1; then
+    _devkit_ghostty_message "❌" "ssh command not found" "" 31 >&2
+    return 1
+  fi
+
+  _devkit_ghostty_message "⏫" "Install terminfo" "$term -> $*" 36
+  command infocmp -x "$term" | command ssh "$@" 'if command -v tic >/dev/null 2>&1; then tic -x -; else echo "tic command not found on remote host" >&2; exit 127; fi'
+}
+
 _devkit_ghostty_command() {
   if ! command -v ghostty >/dev/null 2>&1; then
     _devkit_ghostty_message "❌" "ghostty command not found" "" 31 >&2
@@ -110,6 +133,7 @@ Usage:
   gty list-fonts
   gty list-themes
   gty ssh-cache [ghostty +ssh-cache args]
+  gty install-terminfo <ssh target/options>
 
 Commands:
   status       显示 Ghostty 环境、配置文件和 zsh integration 状态
@@ -119,6 +143,8 @@ Commands:
   list-fonts  透传 ghostty +list-fonts
   list-themes 透传 ghostty +list-themes
   ssh-cache   透传 ghostty +ssh-cache
+  install-terminfo
+               将本机 xterm-ghostty terminfo 安装到远端账号
 
 Environment:
   DEVKIT_GHOSTTY_ENABLE=0              禁用本模块
@@ -154,6 +180,10 @@ EOF
       shift
       _devkit_ghostty_command || return
       command ghostty +ssh-cache "$@"
+      ;;
+    install-terminfo|ssh-terminfo)
+      shift
+      ghostty_install_terminfo "$@"
       ;;
     *)
       _devkit_ghostty_message "❌" "Unknown command" "$1" 31 >&2

@@ -370,6 +370,7 @@ gty show-config --default --docs
 gty list-fonts
 gty list-themes
 gty ssh-cache --help
+gty install-terminfo user@host
 ```
 
 Ghostty 的 zsh shell integration 路径来自 Ghostty 启动时设置的 `GHOSTTY_RESOURCES_DIR`：
@@ -392,6 +393,54 @@ export DEVKIT_GHOSTTY_ENABLE=0
 
 ```bash
 shell-integration-features = sudo,ssh-env,ssh-terminfo
+```
+
+### Ghostty SSH 显示异常
+
+如果在 Ghostty 里 SSH 到服务器后出现删除键、方向键或终端重绘异常，例如输错后按删除只显示空格，通常是远端不认识 Ghostty 的终端类型 `xterm-ghostty`。
+
+优先在 Ghostty 配置中启用 `ssh-terminfo`：
+
+```bash
+shell-integration-features = sudo,ssh-env,ssh-terminfo
+```
+
+如果仍然异常，按下面两种方式处理。
+
+方式一：给当前远端账号安装 Ghostty terminfo。这个方式适合常用服务器，只会写入你登录账号的 `~/.terminfo`，不需要 root，也不会改系统级配置：
+
+```bash
+gty install-terminfo user@host
+```
+
+安装完成后，后续正常 SSH：
+
+```bash
+ssh user@host
+```
+
+`gty install-terminfo` 等同于手动执行：
+
+```bash
+infocmp -x xterm-ghostty | ssh user@host 'tic -x -'
+```
+
+方式二：临时使用通用终端类型。这个方式适合别人的服务器、临时机器，或者不想在远端账号留下 `~/.terminfo` 文件的场景：
+
+```bash
+TERM=xterm-256color ssh user@host
+```
+
+也可以写成 SSH alias，例如：
+
+```bash
+alias sshx='TERM=xterm-256color ssh'
+```
+
+如果只有 Backspace 不生效，远端 tty 的 erase 字符可能不对。登录远端后可临时修正：
+
+```bash
+stty erase '^?'
 ```
 
 ## Starship prompt themes
