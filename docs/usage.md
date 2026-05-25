@@ -370,6 +370,7 @@ gty show-config --default --docs
 gty list-fonts
 gty list-themes
 gty ssh-cache --help
+gty ssh user@host
 gty install-terminfo user@host
 ```
 
@@ -431,11 +432,35 @@ infocmp -x xterm-ghostty | ssh user@host 'tic -x -'
 TERM=xterm-256color ssh user@host
 ```
 
-也可以写成 SSH alias，例如：
+DevKit 也提供了 `gty ssh` 快捷命令，后面的参数会原样传给 `ssh`：
 
 ```bash
-alias sshx='TERM=xterm-256color ssh'
+gty ssh user@host
+gty ssh -p 2222 user@host
+gty ssh -i ~/.ssh/id_ed25519 user@host
+gty ssh -J jump_user@jump_host target_user@target_host
 ```
+
+`gty ssh user@host` 等同于 `TERM=xterm-256color ssh user@host`。如需覆盖默认 TERM，可以在加载 DevKit 前设置：
+
+```bash
+export DEVKIT_GHOSTTY_SSH_TERM=xterm-256color
+```
+
+常用参数说明：
+
+- `-p 2222`：使用指定 SSH 端口。
+- `-i ~/.ssh/id_ed25519`：使用指定私钥文件。
+- `-J jump_user@jump_host`：通过跳板机连接目标服务器，等同于 SSH 的 `ProxyJump`。连接路径是 `本机 -> jump_host -> target_host`。
+- `user@host`：SSH 目标，和普通 `ssh user@host` 写法一致。
+
+跳板机示例：
+
+```bash
+gty ssh -J jump@1.2.3.4 root@10.0.0.8
+```
+
+这表示先登录 `jump@1.2.3.4`，再从跳板机连接 `root@10.0.0.8`。
 
 如果只有 Backspace 不生效，远端 tty 的 erase 字符可能不对。登录远端后可临时修正：
 

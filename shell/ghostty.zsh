@@ -133,6 +133,7 @@ Usage:
   gty list-fonts
   gty list-themes
   gty ssh-cache [ghostty +ssh-cache args]
+  gty ssh <ssh target/options>
   gty install-terminfo <ssh target/options>
 
 Commands:
@@ -143,6 +144,7 @@ Commands:
   list-fonts  透传 ghostty +list-fonts
   list-themes 透传 ghostty +list-themes
   ssh-cache   透传 ghostty +ssh-cache
+  ssh         使用兼容 TERM 连接 SSH
   install-terminfo
                将本机 xterm-ghostty terminfo 安装到远端账号
 
@@ -181,6 +183,10 @@ EOF
       _devkit_ghostty_command || return
       command ghostty +ssh-cache "$@"
       ;;
+    ssh)
+      shift
+      ghostty_ssh "$@"
+      ;;
     install-terminfo|ssh-terminfo)
       shift
       ghostty_install_terminfo "$@"
@@ -191,6 +197,27 @@ EOF
       return 1
       ;;
   esac
+}
+
+ghostty_ssh() {
+  if [ $# -lt 1 ]; then
+    cat <<'EOF'
+
+gty ssh - Ghostty compatible SSH
+
+Usage:
+  gty ssh <ssh target/options>
+
+Examples:
+  gty ssh user@host
+  gty ssh -p 2222 user@host
+  gty ssh -i ~/.ssh/id_ed25519 user@host
+
+EOF
+    return 1
+  fi
+
+  TERM="${DEVKIT_GHOSTTY_SSH_TERM:-xterm-256color}" command ssh "$@"
 }
 
 # Ghostty 会自动给初始 zsh 注入 shell integration；这里再次 source 是安全的：
