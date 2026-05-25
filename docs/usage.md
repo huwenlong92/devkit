@@ -80,8 +80,11 @@ export DEVKIT_CLAUDE_FNM_VERSION=default
 ```bash
 proxy status
 proxy on
+proxy on 7890
+proxy on 6666
 proxy off
 proxy auto
+proxy auto --off
 proxy check
 proxy ip
 
@@ -108,7 +111,9 @@ proxy forward status
 proxy forward stop
 ```
 
-`proxy auto` 会按 `DEVKIT_PROXY_PORTS` 的顺序探测可用代理，默认包含当前配置端口、`7890` 和 `6666`。如果两个本地代理客户端分别监听不同端口，哪个端口当前能通过代理访问测试 URL，就会自动切到哪个端口：
+`proxy on` 会直接使用当前配置端口；也可以用 `proxy on 7890` / `proxy on 6666` 明确指定端口。
+
+`proxy auto` 会按 `DEVKIT_PROXY_PORTS` 的顺序探测可用代理，默认包含当前配置端口、`7890` 和 `6666`。如果两个本地代理客户端分别监听不同端口，哪个端口当前能通过代理访问测试 URL，就会自动切到哪个端口。探测失败时默认保留当前 shell 里的代理状态；如果希望探测失败就清空代理，可以用 `proxy auto --off`：
 
 ```bash
 export DEVKIT_PROXY_PORTS="7890,6666"

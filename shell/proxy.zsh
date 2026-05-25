@@ -55,7 +55,17 @@ _devkit_proxy_refresh_urls() {
   _devkit_socks_proxy="socks5://${DEVKIT_PROXY_HOST}:${DEVKIT_SOCKS_PROXY_PORT}"
 }
 
+_devkit_proxy_validate_port() {
+  local port="$1"
+
+  if [[ ! "$port" =~ '^[0-9]+$' ]] || (( port < 1 || port > 65535 )); then
+    _devkit_proxy_message "❌" "Invalid port" "$port" 31
+    return 1
+  fi
+}
+
 _devkit_proxy_use_port() {
+  _devkit_proxy_validate_port "$1" || return
   export DEVKIT_HTTP_PROXY_PORT="$1"
   export DEVKIT_SOCKS_PROXY_PORT="$1"
   _devkit_proxy_refresh_urls
@@ -96,6 +106,10 @@ _devkit_proxy_message() {
 # 基础开关
 # ------------------------------------------------------------------------------
 proxy_on() {
+  if [[ -n "${1:-}" ]]; then
+    _devkit_proxy_use_port "$1" || return
+  fi
+
   export http_proxy="$_devkit_http_proxy"
   export https_proxy="$_devkit_http_proxy"
   export all_proxy="$_devkit_socks_proxy"
@@ -291,6 +305,17 @@ _devkit_check_proxy() {
 proxy_auto() {
   local -a candidate_ports checked_ports
   local port
+  local turn_off_on_miss=0
+
+  case "${1:-}" in
+    ""|keep) ;;
+    --off|off) turn_off_on_miss=1 ;;
+    *)
+      _devkit_proxy_message "❌" "Unknown option" "$1" 31
+      _devkit_proxy_message "👉" "Usage" "proxy auto [--off]" 36
+      return 2
+      ;;
+  esac
 
   candidate_ports=("${(@s:,:)DEVKIT_PROXY_PORTS}")
 
@@ -306,8 +331,13 @@ proxy_auto() {
     fi
   done
 
-  proxy_off
+  if (( turn_off_on_miss )); then
+    proxy_off
+  fi
   _devkit_proxy_message "⚠️" "No proxy detected" "$DEVKIT_PROXY_PORTS" 33
+  if (( ! turn_off_on_miss )); then
+    _devkit_proxy_message "ℹ️" "Proxy unchanged" "use proxy off or proxy auto --off to clear" 36
+  fi
 }
 
 # ------------------------------------------------------------------------------
@@ -651,10 +681,10 @@ proxy() {
 🧰 DevKit Proxy CLI
 
 基础：
-  proxy on
+  proxy on [port]
   proxy off
   proxy status
-  proxy auto
+  proxy auto [--off]
   proxy check
   proxy ip
   proxy test
@@ -688,10 +718,10 @@ proxy() {
 EOF
       ;;
 
-    on) proxy_on ;;
+    on) proxy_on "$2" ;;
     off) proxy_off ;;
     status) proxy_status ;;
-    auto) proxy_auto ;;
+    auto) proxy_auto "$2" ;;
     check|test) ptest ;;
     ip|ipcheck) ipcheck ;;
 
