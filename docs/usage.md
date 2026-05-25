@@ -420,7 +420,7 @@ gty install-terminfo user@host
 ssh user@host
 ```
 
-`gty install-terminfo` 等同于手动执行：
+`gty install-terminfo` 等同于手动执行下面的流程，并会兼容处理 Ghostty terminfo 里部分旧版 `tic` 会报警的字段：
 
 ```bash
 infocmp -x xterm-ghostty | ssh user@host 'tic -x -'

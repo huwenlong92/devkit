@@ -108,7 +108,30 @@ ghostty_install_terminfo() {
   fi
 
   _devkit_ghostty_message "⏫" "Install terminfo" "$term -> $*" 36
-  command infocmp -x "$term" | command ssh "$@" 'if command -v tic >/dev/null 2>&1; then tic -x -; else echo "tic command not found on remote host" >&2; exit 127; fi'
+  _devkit_ghostty_terminfo_source "$term" | command ssh "$@" 'if command -v tic >/dev/null 2>&1; then tic -x -; else echo "tic command not found on remote host" >&2; exit 127; fi'
+}
+
+_devkit_ghostty_terminfo_source() {
+  command infocmp -x "$1" | command awk '
+    /^[[:space:]]*Setulc=/ {
+      gsub(/%;m/, ";m")
+    }
+    !rewritten && $0 !~ /^[[:space:]]*#/ && $0 ~ /^[^[:space:]][^,]*,$/ {
+      line = $0
+      sub(/,$/, "", line)
+      count = split(line, names, /\|/)
+      if (count > 1 && names[count] !~ /[[:space:]]/) {
+        line = names[1]
+        for (i = 2; i < count; i++) {
+          line = line "|" names[i]
+        }
+        print line "|" names[count] " terminal,"
+        rewritten = 1
+        next
+      }
+    }
+    { print }
+  '
 }
 
 _devkit_ghostty_command() {
