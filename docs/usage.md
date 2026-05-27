@@ -147,6 +147,30 @@ localhost,127.0.0.1,::1,0.0.0.0,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,
 export DEVKIT_NO_PROXY="localhost,127.0.0.1,::1,192.168.1.0/24"
 ```
 
+## SSH tunnel examples
+
+`vispp-db` 封装了常用的 PostgreSQL SSH 隧道：
+
+```bash
+# 等价于后台运行：
+# ssh -N -L 15432:127.0.0.1:5432 vispp.pro
+vispp-db start
+vispp-db status
+vispp-db stop
+vispp-db restart
+```
+
+启动后本机连接 `127.0.0.1:15432` 即可访问 `vispp.pro` 上的 `127.0.0.1:5432`。命令使用 SSH control socket 管理后台连接，因此不需要手动查找并 kill SSH 进程。
+
+可以在加载 DevKit 前覆盖默认配置：
+
+```bash
+export DEVKIT_VISPP_DB_SSH_TARGET="vispp.pro"
+export DEVKIT_VISPP_DB_LOCAL_PORT="15432"
+export DEVKIT_VISPP_DB_REMOTE_HOST="127.0.0.1"
+export DEVKIT_VISPP_DB_REMOTE_PORT="5432"
+```
+
 ## eza file listing
 
 DevKit 会在本机已经安装 `eza` 时自动启用文件列表增强；未安装时会安静跳过，保留系统 `ls`。
