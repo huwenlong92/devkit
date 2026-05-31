@@ -8,6 +8,7 @@ DevKit 是一组面向日常开发环境的 zsh 小工具，用来把常用命�
 - Codex 多模式快捷命令：`codex`、`cx`、`cxr`、`cxf`、`cxs`、`cxv`，默认通过 `fnm default` 的 Node.js 版本运行，用于开发、只读分析、修复、SQL 检查和代码审查等场景。
 - Claude Code 快捷命令：`claude` 会先自动检测并开启代理，再通过 `fnm default` 的 Node.js 版本运行，避免进入项目后被本地 Node 版本切走。
 - 代理管理命令：`proxy on|off|status|auto|check|ip`，以及 npm、pnpm、git 代理开关、VPN/出口 IP 检测 `vpncheck`、本机/直连 IP 检测 `ipcheck`、端口转发 `proxy forward` 和临时代理执行命令 `p`。
+- Docker 容器快捷入口：`redis74` / `redis74sh`、`pg14` / `pg14sh`、`pg18` / `pg18sh`，默认固定使用 `home` Docker context，分别进入 Redis 7.4、PostgreSQL 14、PostgreSQL 18 容器客户端或 shell；也提供更短的 `r74`、`p14`、`p18` 别名。
 - SSH 数据库隧道：`vispp-db start|status|stop|restart`，默认封装 `ssh -N -L 15432:127.0.0.1:5432 vispp.pro`，通过后台 SSH control socket 管理连接。
 - Starship prompt：内置主题库 `config/starship/themes/`，可用 `starship-theme` 切换到本机的 `config/starship.toml`。
 - Ghostty 终端集成：在 Ghostty 内自动加载 zsh shell integration，并提供 `gty` 查看、编辑配置和检查环境。

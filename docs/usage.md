@@ -147,6 +147,61 @@ localhost,127.0.0.1,::1,0.0.0.0,*.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,
 export DEVKIT_NO_PROXY="localhost,127.0.0.1,::1,192.168.1.0/24"
 ```
 
+## Docker container examples
+
+这些命令默认绑定到你本机常用的容器名：
+
+```bash
+# Redis 7.4
+redis74          # docker --context home exec -it redis-74 redis-cli
+redis74sh        # docker --context home exec -it redis-74 sh
+r74              # redis74 的短别名
+r74sh            # redis74sh 的短别名
+
+# PostgreSQL 14
+pg14             # docker --context home exec -it postgresql-14 psql -U postgres
+pg14sh           # docker --context home exec -it postgresql-14 bash
+p14              # pg14 的短别名
+p14sh            # pg14sh 的短别名
+
+# PostgreSQL 18
+pg18             # docker --context home exec -it postgresql-18 psql -U postgres
+pg18sh           # docker --context home exec -it postgresql-18 bash
+p18              # pg18 的短别名
+p18sh            # pg18sh 的短别名
+
+# 查看这组快捷命令帮助
+devkit-docker help
+dkd help
+redis74 help
+pg14 help
+pg18 help
+
+# 查看固定使用的 Docker context / 容器状态
+devkit-docker context
+devkit-docker status
+```
+
+快捷命令会显式使用 `home` Docker context，不会修改当前终端的 Docker context。
+
+`pg14` / `pg18` 后面可以继续传 `psql` 参数，例如：
+
+```bash
+pg14 -d postgres
+pg18 -d postgres -c '\l'
+```
+
+如果本机容器名或 PostgreSQL 用户不同，可以在加载 DevKit 前覆盖：
+
+```bash
+export DEVKIT_DOCKER_CONTEXT="home"
+export DEVKIT_REDIS74_CONTAINER="redis-74"
+export DEVKIT_POSTGRES14_CONTAINER="postgresql-14"
+export DEVKIT_POSTGRES14_USER="postgres"
+export DEVKIT_POSTGRES18_CONTAINER="postgresql-18"
+export DEVKIT_POSTGRES18_USER="postgres"
+```
+
 ## SSH tunnel examples
 
 `vispp-db` 封装了常用的 PostgreSQL SSH 隧道：
