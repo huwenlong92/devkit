@@ -161,14 +161,22 @@ r74sh            # redis74sh 的短别名
 # PostgreSQL 14
 pg14             # docker --context home exec -it postgresql-14 psql -U postgres
 pg14sh           # docker --context home exec -it postgresql-14 bash
+pg14dump         # 导出 PostgreSQL 14 数据库
+pg14restore      # 恢复 PostgreSQL 14 dump
 p14              # pg14 的短别名
 p14sh            # pg14sh 的短别名
+p14dump          # pg14dump 的短别名
+p14restore       # pg14restore 的短别名
 
 # PostgreSQL 18
 pg18             # docker --context home exec -it postgresql-18 psql -U postgres
 pg18sh           # docker --context home exec -it postgresql-18 bash
+pg18dump         # 导出 PostgreSQL 18 数据库
+pg18restore      # 恢复 PostgreSQL 18 dump
 p18              # pg18 的短别名
 p18sh            # pg18sh 的短别名
+p18dump          # pg18dump 的短别名
+p18restore       # pg18restore 的短别名
 
 # 查看这组快捷命令帮助
 devkit-docker help
@@ -176,6 +184,10 @@ dkd help
 redis74 help
 pg14 help
 pg18 help
+pg14dump help
+pg14restore help
+pg18dump help
+pg18restore help
 
 # 查看固定使用的 Docker context / 容器状态
 devkit-docker context
@@ -190,6 +202,30 @@ devkit-docker status
 pg14 -d postgres
 pg18 -d postgres -c '\l'
 ```
+
+导出/恢复默认使用 PostgreSQL custom dump 格式，并带 `--no-owner --no-acl`，适合把模板库导入到不同用户名的新项目库：
+
+```bash
+# PostgreSQL 18：模板库用户是 template_user，新项目用户是 app_user
+pg18dump template_db ./template.dump -U template_user
+pg18restore ./template.dump new_project_db -U app_user
+
+# 如果需要用 postgres 连接，但让恢复后的对象归 app_user
+pg18restore ./template.dump new_project_db -U postgres --role app_user
+
+# 目标库已有同名对象时，先清理再恢复
+pg18restore ./template.dump new_project_db -U postgres --clean
+
+# 只导出 public schema，或只导出 schema 结构
+pg18dump template_db ./template-public.dump -U template_user -- -n public
+pg18dump template_db ./template-schema.dump -U template_user -- --schema-only
+
+# PostgreSQL 14 同样支持
+pg14dump template_db ./template14.dump -U template_user
+pg14restore ./template14.dump new_project_db -U app_user
+```
+
+`pg14restore` / `pg18restore` 默认要求目标数据库已经存在；如果需要先建库，可以先用 `pg14 -d postgres` 或 `pg18 -d postgres` 连接后创建。
 
 如果本机容器名或 PostgreSQL 用户不同，可以在加载 DevKit 前覆盖：
 
