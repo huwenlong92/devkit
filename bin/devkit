@@ -43,7 +43,7 @@ Usage:
 
 Commands:
   refresh  在 DK 目录执行 git pull --ff-only
-  commands 列出 DK 提供的常用命令
+  commands 列出 DK 提供的常用命令，也可用 cmds/list/ls
   path     显示当前 DK 目录
 
 Environment:
@@ -52,6 +52,7 @@ Environment:
 Examples:
   ${COMMAND_NAME} refresh
   ${COMMAND_NAME} commands
+  ${COMMAND_NAME} ls
   ${COMMAND_NAME} path
 EOF
 }
@@ -63,6 +64,7 @@ DK commands
 Core:
   dk help                         Show DK help
   dk commands                     Show this command list
+  dk cmds / dk list / dk ls       Aliases for dk commands
   dk refresh                      Pull latest DK and reload shell
   dk path                         Print DK path
 

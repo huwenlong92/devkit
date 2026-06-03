@@ -531,6 +531,38 @@ contabo-pg18restore() {
   _devkit_pg_restore 18 "$@"
 }
 
+cr74() {
+  contabo-redis "$@"
+}
+
+cr74sh() {
+  contabo-redissh "$@"
+}
+
+credis() {
+  contabo-redis "$@"
+}
+
+credissh() {
+  contabo-redissh "$@"
+}
+
+cpg18() {
+  contabo-pg18 "$@"
+}
+
+cpg18sh() {
+  contabo-pg18sh "$@"
+}
+
+cpg18dump() {
+  contabo-pg18dump "$@"
+}
+
+cpg18restore() {
+  contabo-pg18restore "$@"
+}
+
 alias r74="redis74"
 alias r74sh="redis74sh"
 alias p14="pg14"
@@ -541,12 +573,4 @@ alias p18="pg18"
 alias p18sh="pg18sh"
 alias p18dump="pg18dump"
 alias p18restore="pg18restore"
-alias cr74="contabo-redis"
-alias cr74sh="contabo-redissh"
-alias credis="contabo-redis"
-alias credissh="contabo-redissh"
-alias cpg18="contabo-pg18"
-alias cpg18sh="contabo-pg18sh"
-alias cpg18dump="contabo-pg18dump"
-alias cpg18restore="contabo-pg18restore"
 alias dkd="devkit-docker"
