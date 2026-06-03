@@ -1,6 +1,6 @@
 # Usage
 
-## Load DevKit
+## Load DK
 
 ```bash
 export DEVKIT="$HOME/devkit"
@@ -9,15 +9,15 @@ export DEVKIT="$HOME/devkit"
 
 建议把上面的内容放到 `~/.zshrc`，之后新开的终端会自动加载 `DEVKIT/bin` 和 `shell/` 下的快捷命令。
 
-## Refresh DevKit
+## Refresh DK
 
-可以用一个命令拉取最新 DevKit，并重新加载当前 shell 配置：
+可以用一个命令拉取最新 DK，并重新加载当前 shell 配置：
 
 ```bash
-devkit refresh
+dk refresh
 ```
 
-在已加载 DevKit 的 zsh 里，`devkit refresh` 会先在 `$DEVKIT` 目录执行 `git pull --ff-only`，成功后自动重新 `source "$DEVKIT/shell/index.zsh"`。
+在已加载 DK 的 zsh 里，`dk refresh` 和 `devkit refresh` 等价，都会先在 `$DEVKIT` 目录执行 `git pull --ff-only`，成功后自动重新 `source "$DEVKIT/shell/index.zsh"`。日常直接用 `dk` 就行。
 
 ## Codex examples
 

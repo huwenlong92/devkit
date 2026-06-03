@@ -17,3 +17,17 @@ devkit() {
       ;;
   esac
 }
+
+dk() {
+  case "${1:-}" in
+    refresh|update|sync)
+      DEVKIT_COMMAND_NAME=dk command devkit "$@" || return
+      source "$DEVKIT/shell/index.zsh"
+      rehash 2>/dev/null
+      echo "✅  DK shell reloaded"
+      ;;
+    *)
+      DEVKIT_COMMAND_NAME=dk command devkit "$@"
+      ;;
+  esac
+}

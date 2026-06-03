@@ -1,10 +1,10 @@
-# DevKit shell zsh 脚本工具箱
+# DK shell zsh 脚本工具箱
 
-DevKit 是一组面向日常开发环境的 zsh 小工具，用来把常用命令、代理开关和 Codex 工作流收进一个可复用的 shell 工具箱。配置后只需要 source 一次入口脚本，就可以在任意终端里使用这些快捷命令。
+DK 是一组面向日常开发环境的 zsh 小工具，用来把常用命令、代理开关和 Codex 工作流收进一个可复用的 shell 工具箱。配置后只需要 source 一次入口脚本，就可以在任意终端里使用这些快捷命令。
 
 当前包含：
 
-- DevKit 管理命令：`devkit refresh`，用于拉取最新仓库内容并重新加载当前 shell 配置。
+- DK 管理命令：`dk refresh`，用于拉取最新仓库内容并重新加载当前 shell 配置；`devkit refresh` 保留兼容。
 - Codex 多模式快捷命令：`codex`、`cx`、`cxr`、`cxf`、`cxs`、`cxv`，默认通过 `fnm default` 的 Node.js 版本运行，用于开发、只读分析、修复、SQL 检查和代码审查等场景。
 - Claude Code 快捷命令：`claude` 会先自动检测并开启代理，再通过 `fnm default` 的 Node.js 版本运行，避免进入项目后被本地 Node 版本切走。
 - 代理管理命令：`proxy on|off|status|auto|check|ip`，以及 npm、pnpm、git 代理开关、VPN/出口 IP 检测 `vpncheck`、本机/直连 IP 检测 `ipcheck`、端口转发 `proxy forward` 和临时代理执行命令 `p`。

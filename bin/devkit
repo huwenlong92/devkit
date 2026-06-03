@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEVKIT_ROOT="${DEVKIT:-$SCRIPT_ROOT}"
+COMMAND_NAME="${DEVKIT_COMMAND_NAME:-$(basename "$0")}"
 
 print_message() {
   local icon="$1"
@@ -31,24 +32,24 @@ print_error() {
 }
 
 show_help() {
-  cat <<'EOF'
-devkit - DevKit 工具箱管理命令
+  cat <<EOF
+${COMMAND_NAME} - DK 工具箱管理命令
 
 Usage:
-  devkit refresh
-  devkit path
-  devkit -h | --help | help
+  ${COMMAND_NAME} refresh
+  ${COMMAND_NAME} path
+  ${COMMAND_NAME} -h | --help | help
 
 Commands:
-  refresh  在 DevKit 目录执行 git pull --ff-only
-  path     显示当前 DevKit 目录
+  refresh  在 DK 目录执行 git pull --ff-only
+  path     显示当前 DK 目录
 
 Environment:
-  DEVKIT  DevKit 安装目录，默认当前 devkit 命令所在目录
+  DEVKIT  DK 安装目录，默认当前 ${COMMAND_NAME} 命令所在目录
 
 Examples:
-  devkit refresh
-  devkit path
+  ${COMMAND_NAME} refresh
+  ${COMMAND_NAME} path
 EOF
 }
 
@@ -67,7 +68,7 @@ refresh_devkit() {
   git -C "$DEVKIT_ROOT" pull --ff-only
 
   echo
-  print_message "✅" "DevKit updated" "$DEVKIT_ROOT" 32
+  print_message "✅" "DK updated" "$DEVKIT_ROOT" 32
   print_message "👉" "Reload current shell" "" 36
   printf '  source %q\n' "$DEVKIT_ROOT/shell/index.zsh"
 }
