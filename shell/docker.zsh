@@ -6,6 +6,10 @@ _devkit_docker_context() {
   echo "${DEVKIT_DOCKER_CONTEXT:-home}"
 }
 
+_devkit_contabo_docker_context() {
+  echo "${DEVKIT_CONTABO_DOCKER_CONTEXT:-contabo}"
+}
+
 _devkit_pg_container() {
   case "$1" in
     14) echo "${DEVKIT_POSTGRES14_CONTAINER:-postgresql-14}" ;;
@@ -52,7 +56,8 @@ _devkit_docker_exec() {
 
 _devkit_pg_dump_help() {
   local version="$1"
-  local command_name="pg${version}dump"
+  local command_name="${DEVKIT_PG_DUMP_COMMAND_NAME:-pg${version}dump}"
+  local user_config_name="${DEVKIT_PG_USER_CONFIG_NAME:-DEVKIT_POSTGRES${version}_USER}"
 
   cat <<EOF
 ${command_name} - dump a PostgreSQL ${version} database from the configured Docker context
@@ -63,7 +68,7 @@ Usage:
 
 Defaults:
   file: ./<database>-<timestamp>.dump
-  user: \$DEVKIT_POSTGRES${version}_USER or postgres
+  user: \$${user_config_name} or postgres
   format: custom dump, with --no-owner --no-acl
 
 Examples:
@@ -76,7 +81,8 @@ EOF
 
 _devkit_pg_restore_help() {
   local version="$1"
-  local command_name="pg${version}restore"
+  local command_name="${DEVKIT_PG_RESTORE_COMMAND_NAME:-pg${version}restore}"
+  local user_config_name="${DEVKIT_PG_USER_CONFIG_NAME:-DEVKIT_POSTGRES${version}_USER}"
 
   cat <<EOF
 ${command_name} - restore a PostgreSQL ${version} custom dump into a database
@@ -86,7 +92,7 @@ Usage:
   ${command_name} <dump-file> <database> [-U user] -- [pg_restore args]
 
 Defaults:
-  user: \$DEVKIT_POSTGRES${version}_USER or postgres
+  user: \$${user_config_name} or postgres
   restore options: --no-owner --no-acl
 
 Examples:
@@ -98,7 +104,7 @@ EOF
 
 _devkit_pg_dump() {
   local version="$1"
-  local command_name="pg${version}dump"
+  local command_name="${DEVKIT_PG_DUMP_COMMAND_NAME:-pg${version}dump}"
   shift
 
   if [[ "${1:-}" == "help" || "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -177,7 +183,7 @@ _devkit_pg_dump() {
 
 _devkit_pg_restore() {
   local version="$1"
-  local command_name="pg${version}restore"
+  local command_name="${DEVKIT_PG_RESTORE_COMMAND_NAME:-pg${version}restore}"
   shift
 
   if [[ "${1:-}" == "help" || "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -270,17 +276,21 @@ _devkit_pg_restore() {
 
 _devkit_docker_shortcuts_help() {
   local docker_context="$(_devkit_docker_context)"
+  local contabo_context="$(_devkit_contabo_docker_context)"
 
   cat <<EOF
 DevKit Docker shortcuts
 
 Context:
   docker --context ${docker_context}
+  docker --context ${contabo_context}       Used by contabo-* shortcuts
 
 Module:
   devkit-docker help              Show this help
   devkit-docker context           Print configured Docker context
   devkit-docker status            Show configured containers
+  devkit-docker contabo-context   Print configured Contabo Docker context
+  devkit-docker contabo-status    Show configured Contabo containers
   dkd                             Alias for devkit-docker
 
 Redis:
@@ -304,6 +314,19 @@ PostgreSQL:
   p14dump / p18dump               Aliases for pg14dump / pg18dump
   p14restore / p18restore         Aliases for pg14restore / pg18restore
 
+Contabo:
+  contabo-redis [redis-cli args]  Open redis-cli in Contabo Redis
+  contabo-redissh [shell args]    Open sh in Contabo Redis
+  contabo-pg18 [psql args]        Open psql in Contabo PostgreSQL 18
+  contabo-pg18sh [shell args]     Open bash in Contabo PostgreSQL 18
+  contabo-pg18dump <db> [file] [-U user]
+                                  Dump a Contabo PostgreSQL 18 database
+  contabo-pg18restore <file> <db> [-U user]
+                                  Restore a Contabo PostgreSQL 18 dump
+  cr74 / cr74sh                   Aliases for contabo-redis / contabo-redissh
+  cpg18 / cpg18sh                 Aliases for contabo-pg18 / contabo-pg18sh
+  cpg18dump / cpg18restore        Aliases for Contabo dump / restore
+
 Examples:
   pg18 -d postgres -c 'select 1'
   pg18dump template_db ./template.dump -U template_user
@@ -314,6 +337,9 @@ Examples:
   pg14restore ./template14.dump new_project_db -U new_project_user
   pg14 -d postgres
   redis74 -a "\$REDIS_PASSWORD" PING
+  cpg18 -d postgres -c 'select version()'
+  cpg18dump template_db ./contabo-template.dump -U template_user
+  cr74 -a "\$REDIS_PASSWORD" PING
 
 Config:
   DEVKIT_DOCKER_CONTEXT           Default: home
@@ -322,6 +348,11 @@ Config:
   DEVKIT_POSTGRES14_USER          Default: postgres
   DEVKIT_POSTGRES18_CONTAINER     Default: postgresql-18
   DEVKIT_POSTGRES18_USER          Default: postgres
+  DEVKIT_CONTABO_DOCKER_CONTEXT   Default: contabo
+  DEVKIT_CONTABO_REDIS_CONTAINER  Default: redis-74
+  DEVKIT_CONTABO_POSTGRES18_CONTAINER
+                                  Default: postgresql-18
+  DEVKIT_CONTABO_POSTGRES18_USER  Default: postgres
 EOF
 }
 
@@ -335,6 +366,9 @@ devkit-docker() {
     context)
       echo "$docker_context"
       ;;
+    contabo-context)
+      _devkit_contabo_docker_context
+      ;;
     status)
       if ! command -v docker >/dev/null 2>&1; then
         echo "❌ docker command not found" >&2
@@ -345,6 +379,17 @@ devkit-docker() {
         --filter "name=^/${DEVKIT_REDIS74_CONTAINER:-redis-74}$" \
         --filter "name=^/${DEVKIT_POSTGRES14_CONTAINER:-postgresql-14}$" \
         --filter "name=^/${DEVKIT_POSTGRES18_CONTAINER:-postgresql-18}$" \
+        --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+      ;;
+    contabo-status)
+      if ! command -v docker >/dev/null 2>&1; then
+        echo "❌ docker command not found" >&2
+        return 127
+      fi
+
+      command docker --context "$(_devkit_contabo_docker_context)" ps \
+        --filter "name=^/${DEVKIT_CONTABO_REDIS_CONTAINER:-redis-74}$" \
+        --filter "name=^/${DEVKIT_CONTABO_POSTGRES18_CONTAINER:-postgresql-18}$" \
         --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
       ;;
     *)
@@ -425,6 +470,67 @@ pg18restore() {
   _devkit_pg_restore 18 "$@"
 }
 
+contabo-redis() {
+  if [ "${1:-}" = "help" ]; then
+    _devkit_docker_shortcuts_help
+    return
+  fi
+
+  local DEVKIT_DOCKER_CONTEXT="$(_devkit_contabo_docker_context)"
+  _devkit_docker_exec "${DEVKIT_CONTABO_REDIS_CONTAINER:-redis-74}" redis-cli "$@"
+}
+
+contabo-redissh() {
+  if [ "${1:-}" = "help" ]; then
+    _devkit_docker_shortcuts_help
+    return
+  fi
+
+  local DEVKIT_DOCKER_CONTEXT="$(_devkit_contabo_docker_context)"
+  _devkit_docker_exec "${DEVKIT_CONTABO_REDIS_CONTAINER:-redis-74}" sh "$@"
+}
+
+contabo-pg18() {
+  if [ "${1:-}" = "help" ]; then
+    _devkit_docker_shortcuts_help
+    return
+  fi
+
+  local DEVKIT_DOCKER_CONTEXT="$(_devkit_contabo_docker_context)"
+  local DEVKIT_POSTGRES18_CONTAINER="${DEVKIT_CONTABO_POSTGRES18_CONTAINER:-postgresql-18}"
+  local DEVKIT_POSTGRES18_USER="${DEVKIT_CONTABO_POSTGRES18_USER:-postgres}"
+  _devkit_docker_exec "$(_devkit_pg_container 18)" psql -U "$(_devkit_pg_user 18)" "$@"
+}
+
+contabo-pg18sh() {
+  if [ "${1:-}" = "help" ]; then
+    _devkit_docker_shortcuts_help
+    return
+  fi
+
+  local DEVKIT_DOCKER_CONTEXT="$(_devkit_contabo_docker_context)"
+  local DEVKIT_POSTGRES18_CONTAINER="${DEVKIT_CONTABO_POSTGRES18_CONTAINER:-postgresql-18}"
+  _devkit_docker_exec "$(_devkit_pg_container 18)" bash "$@"
+}
+
+contabo-pg18dump() {
+  local DEVKIT_DOCKER_CONTEXT="$(_devkit_contabo_docker_context)"
+  local DEVKIT_POSTGRES18_CONTAINER="${DEVKIT_CONTABO_POSTGRES18_CONTAINER:-postgresql-18}"
+  local DEVKIT_POSTGRES18_USER="${DEVKIT_CONTABO_POSTGRES18_USER:-postgres}"
+  local DEVKIT_PG_DUMP_COMMAND_NAME="contabo-pg18dump"
+  local DEVKIT_PG_USER_CONFIG_NAME="DEVKIT_CONTABO_POSTGRES18_USER"
+  _devkit_pg_dump 18 "$@"
+}
+
+contabo-pg18restore() {
+  local DEVKIT_DOCKER_CONTEXT="$(_devkit_contabo_docker_context)"
+  local DEVKIT_POSTGRES18_CONTAINER="${DEVKIT_CONTABO_POSTGRES18_CONTAINER:-postgresql-18}"
+  local DEVKIT_POSTGRES18_USER="${DEVKIT_CONTABO_POSTGRES18_USER:-postgres}"
+  local DEVKIT_PG_RESTORE_COMMAND_NAME="contabo-pg18restore"
+  local DEVKIT_PG_USER_CONFIG_NAME="DEVKIT_CONTABO_POSTGRES18_USER"
+  _devkit_pg_restore 18 "$@"
+}
+
 alias r74="redis74"
 alias r74sh="redis74sh"
 alias p14="pg14"
@@ -435,4 +541,12 @@ alias p18="pg18"
 alias p18sh="pg18sh"
 alias p18dump="pg18dump"
 alias p18restore="pg18restore"
+alias cr74="contabo-redis"
+alias cr74sh="contabo-redissh"
+alias credis="contabo-redis"
+alias credissh="contabo-redissh"
+alias cpg18="contabo-pg18"
+alias cpg18sh="contabo-pg18sh"
+alias cpg18dump="contabo-pg18dump"
+alias cpg18restore="contabo-pg18restore"
 alias dkd="devkit-docker"

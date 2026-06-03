@@ -178,6 +178,22 @@ p18sh            # pg18sh 的短别名
 p18dump          # pg18dump 的短别名
 p18restore       # pg18restore 的短别名
 
+# Contabo Redis / PostgreSQL 18
+contabo-redis        # docker --context contabo exec -it redis-74 redis-cli
+contabo-redissh      # docker --context contabo exec -it redis-74 sh
+contabo-pg18         # docker --context contabo exec -it postgresql-18 psql -U postgres
+contabo-pg18sh       # docker --context contabo exec -it postgresql-18 bash
+contabo-pg18dump     # 导出 Contabo PostgreSQL 18 数据库
+contabo-pg18restore  # 恢复 Contabo PostgreSQL 18 dump
+cr74                 # contabo-redis 的短别名
+cr74sh               # contabo-redissh 的短别名
+credis               # contabo-redis 的短别名
+credissh             # contabo-redissh 的短别名
+cpg18                # contabo-pg18 的短别名
+cpg18sh              # contabo-pg18sh 的短别名
+cpg18dump            # contabo-pg18dump 的短别名
+cpg18restore         # contabo-pg18restore 的短别名
+
 # 查看这组快捷命令帮助
 devkit-docker help
 dkd help
@@ -188,19 +204,25 @@ pg14dump help
 pg14restore help
 pg18dump help
 pg18restore help
+contabo-pg18 help
+contabo-pg18dump help
+contabo-pg18restore help
 
 # 查看固定使用的 Docker context / 容器状态
 devkit-docker context
 devkit-docker status
+devkit-docker contabo-context
+devkit-docker contabo-status
 ```
 
-快捷命令会显式使用 `home` Docker context，不会修改当前终端的 Docker context。
+本机快捷命令会显式使用 `home` Docker context；Contabo 快捷命令会显式使用 `contabo` Docker context。它们都不会修改当前终端的 Docker context。
 
 `pg14` / `pg18` 后面可以继续传 `psql` 参数，例如：
 
 ```bash
 pg14 -d postgres
 pg18 -d postgres -c '\l'
+cpg18 -d postgres -c 'select version()'
 ```
 
 导出/恢复默认使用 PostgreSQL custom dump 格式，并带 `--no-owner --no-acl`，适合把模板库导入到不同用户名的新项目库：
@@ -223,9 +245,13 @@ pg18dump template_db ./template-schema.dump -U template_user -- --schema-only
 # PostgreSQL 14 同样支持
 pg14dump template_db ./template14.dump -U template_user
 pg14restore ./template14.dump new_project_db -U app_user
+
+# Contabo PostgreSQL 18 同样支持
+cpg18dump template_db ./contabo-template.dump -U template_user
+cpg18restore ./contabo-template.dump new_project_db -U app_user
 ```
 
-`pg14restore` / `pg18restore` 默认要求目标数据库已经存在；如果需要先建库，可以先用 `pg14 -d postgres` 或 `pg18 -d postgres` 连接后创建。
+`pg14restore` / `pg18restore` / `cpg18restore` 默认要求目标数据库已经存在；如果需要先建库，可以先用 `pg14 -d postgres`、`pg18 -d postgres` 或 `cpg18 -d postgres` 连接后创建。
 
 如果本机容器名或 PostgreSQL 用户不同，可以在加载 DevKit 前覆盖：
 
@@ -236,6 +262,10 @@ export DEVKIT_POSTGRES14_CONTAINER="postgresql-14"
 export DEVKIT_POSTGRES14_USER="postgres"
 export DEVKIT_POSTGRES18_CONTAINER="postgresql-18"
 export DEVKIT_POSTGRES18_USER="postgres"
+export DEVKIT_CONTABO_DOCKER_CONTEXT="contabo"
+export DEVKIT_CONTABO_REDIS_CONTAINER="redis-74"
+export DEVKIT_CONTABO_POSTGRES18_CONTAINER="postgresql-18"
+export DEVKIT_CONTABO_POSTGRES18_USER="postgres"
 ```
 
 ## SSH tunnel examples
