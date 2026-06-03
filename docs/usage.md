@@ -19,6 +19,14 @@ dk refresh
 
 在已加载 DK 的 zsh 里，`dk refresh` 和 `devkit refresh` 等价，都会先在 `$DEVKIT` 目录执行 `git pull --ff-only`，成功后自动重新 `source "$DEVKIT/shell/index.zsh"`。日常直接用 `dk` 就行。
 
+忘记命令时可以看总览：
+
+```bash
+dk commands
+dk cmds
+dk ls
+```
+
 ## Codex examples
 
 `codex`、`cx` 以及 `cxr` / `cxf` / `cxs` / `cxv` 默认会通过 `fnm exec --using default` 运行 Codex，避免进入其他 Node.js 项目后被 `.node-version` / `.nvmrc` 切到没有安装 Codex 的版本。

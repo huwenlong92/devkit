@@ -37,11 +37,13 @@ ${COMMAND_NAME} - DK 工具箱管理命令
 
 Usage:
   ${COMMAND_NAME} refresh
+  ${COMMAND_NAME} commands
   ${COMMAND_NAME} path
   ${COMMAND_NAME} -h | --help | help
 
 Commands:
   refresh  在 DK 目录执行 git pull --ff-only
+  commands 列出 DK 提供的常用命令
   path     显示当前 DK 目录
 
 Environment:
@@ -49,7 +51,78 @@ Environment:
 
 Examples:
   ${COMMAND_NAME} refresh
+  ${COMMAND_NAME} commands
   ${COMMAND_NAME} path
+EOF
+}
+
+show_commands() {
+  cat <<'EOF'
+DK commands
+
+Core:
+  dk help                         Show DK help
+  dk commands                     Show this command list
+  dk refresh                      Pull latest DK and reload shell
+  dk path                         Print DK path
+
+Codex / AI:
+  cx <prompt>                     Codex with proxy auto-detect
+  cxr <prompt>                    Codex read-only mode
+  cxf <prompt>                    Codex fix mode
+  cxs <prompt>                    Codex SQL review mode
+  cxv <prompt>                    Codex code review mode
+  codex ...                       Codex via default fnm Node version
+  claude ...                      Claude Code via proxy and default fnm Node
+
+Proxy:
+  proxy help                      Show proxy help
+  proxy on [port]                 Enable HTTP/SOCKS proxy env
+  proxy off                       Disable proxy env
+  proxy status                    Show proxy env status
+  proxy auto [--off]              Auto-enable proxy if local port is available
+  proxy check                     Check external IP through DK proxy
+  vpncheck                        Check external IP without forcing DK proxy
+  ipcheck                         Show local and external IP info
+  p <command>                     Run one command with proxy env
+  pon / poff / psx / pauto        Short aliases for proxy on/off/status/auto
+  pcheck / vcheck / myip          Short aliases for proxy check/vpncheck/ipcheck
+  start_forward / stop_forward    Manage local proxy port forwarding
+
+Docker:
+  devkit-docker help              Show Docker shortcut help
+  dkd help                        Short alias for devkit-docker help
+  redis74 / r74                   Redis 7.4 CLI in home Docker context
+  pg14 / p14                      PostgreSQL 14 psql in home Docker context
+  pg18 / p18                      PostgreSQL 18 psql in home Docker context
+  pg18dump / p18dump              Dump PostgreSQL 18 database
+  pg18restore / p18restore        Restore PostgreSQL 18 dump
+  contabo-redis / cr74            Redis CLI in contabo Docker context
+  contabo-pg18 / cpg18            PostgreSQL 18 psql in contabo Docker context
+  cpg18dump / cpg18restore        Dump/restore Contabo PostgreSQL 18
+
+SSH / DB tunnel:
+  vispp-db help                   Show tunnel help
+  vispp-db start                  Start PostgreSQL SSH tunnel
+  vispp-db status                 Show tunnel status
+  vispp-db stop                   Stop tunnel
+
+Ghostty:
+  gty help                        Show Ghostty helper help
+  gty status                      Show Ghostty integration status
+  gty edit                        Edit Ghostty config
+  gty ssh <target>                SSH with compatible TERM
+  gty install-terminfo <target>   Install Ghostty terminfo remotely
+
+Shell helpers:
+  ls / ll / la / lt               eza-backed listings when eza is installed
+  starship-theme                  Switch local Starship theme
+
+More detail:
+  proxy help
+  devkit-docker help
+  gty help
+  vispp-db help
 EOF
 }
 
@@ -76,6 +149,9 @@ refresh_devkit() {
 case "${1:-}" in
   --help|-h|help|"")
     show_help
+    ;;
+  commands|cmds|list|ls)
+    show_commands
     ;;
   refresh|update|sync)
     refresh_devkit
