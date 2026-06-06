@@ -458,6 +458,62 @@ gvm pkgset create --local
 gvm pkgset use --local
 ```
 
+## rustup Rust versions
+
+DevKit 会在本机已经安装 Rust/Cargo 时加载 `~/.cargo/env`，并在本机有 `rustup` 时启用随目录自动锁定 Rust 工具链。推荐通过 rustup 安装和升级 Rust：
+
+```bash
+# 初次安装
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# 升级到最新 stable
+rustup update stable
+
+# 查看当前版本
+rustup --version
+rustup show active-toolchain
+rustc --version
+cargo --version
+```
+
+DevKit 默认会在 `cd` 后自动读取当前目录或父目录中的 Rust 版本声明，进入项目时设置 `RUSTUP_TOOLCHAIN`，离开项目后恢复加载 DevKit 前的默认工具链。查找顺序是 `rust-toolchain.toml`、`rust-toolchain`、`.rust-version`。
+
+推荐在项目根目录提交官方的 `rust-toolchain.toml`：
+
+```toml
+[toolchain]
+channel = "1.96.0"
+components = ["rustfmt", "clippy"]
+```
+
+也可以用更简单的单行文件：
+
+```bash
+echo "1.96.0" > rust-toolchain
+
+# 或兼容其它版本管理器
+echo "1.96.0" > .rust-version
+```
+
+如果项目声明的 toolchain 还没安装，DevKit 会提示安装命令：
+
+```bash
+rustup toolchain install 1.96.0
+```
+
+可以在加载 DevKit 之前覆盖或禁用默认行为：
+
+```bash
+export DEVKIT_CARGO_ENV="$HOME/.cargo/env"
+export DEVKIT_RUST_DEFAULT_TOOLCHAIN=stable
+
+# 禁用随目录自动切换 Rust 工具链
+export DEVKIT_RUST_AUTO_USE=0
+
+# 或者禁用 Rust 模块
+export DEVKIT_RUST_ENABLE=0
+```
+
 ## pnpm package manager
 
 DevKit 会自动把 `PNPM_HOME` 加入 `PATH`，方便使用 `pnpm setup` 或 Corepack 安装的 pnpm；已安装 `pnpm` 时会自动加载补全。

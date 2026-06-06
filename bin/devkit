@@ -116,6 +116,23 @@ Ghostty:
   gty ssh <target>                SSH with compatible TERM
   gty install-terminfo <target>   Install Ghostty terminfo remotely
 
+Language versions:
+  rustup update stable            Update Rust stable toolchain
+  rustup show active-toolchain    Show active Rust toolchain
+  rustc --version                 Show active Rust compiler version
+  cargo --version                 Show active Cargo version
+  rustup toolchain install 1.96.0 Install a project Rust toolchain
+  rustup default stable           Set default Rust toolchain
+  rustup component add rustfmt    Install Rust formatter component
+  rustup component add clippy     Install Rust linter component
+  rustup target list --installed  Show installed Rust targets
+  gvm list                        Show installed Go versions
+  gvm listall                     Show installable Go versions
+  gvm use go1.22.5 --default      Set default Go version
+  fnm list                        Show installed Node.js versions
+  fnm install --lts               Install latest Node.js LTS
+  fnm use --lts                   Use latest Node.js LTS
+
 Shell helpers:
   ls / ll / la / lt               eza-backed listings when eza is installed
   starship-theme                  Switch local Starship theme
@@ -125,6 +142,7 @@ More detail:
   devkit-docker help
   gty help
   vispp-db help
+  docs/usage.md                   Rust project lock examples and full docs
 EOF
 }
 
